@@ -130,15 +130,16 @@
         <p>
           In some cases, a device may expose functionality that should not be
           accessible at all from a web page. Specific devices may be blocked by
-          recognizing the device by its vendor and product ID and hiding such
-          devices during enumeration. The [=report descriptor=] allows a device
-          to describe its own capabilities, and this information can be used to
-          block classes of devices even when the vendor and product ID cannot
-          be known in advance. This can be accomplished by inspecting the [=HID
-          usage=] values assigned to collections within the [=report
-          descriptor=]; for instance, access to keyboard-like devices can be
-          denied by denying access to devices that include a [=top-level
-          collection=] with the [=HID usage=] for a keyboard.
+          recognizing the device by its [=vendor ID=] and [=product ID=] and
+          hiding such devices during enumeration. The [=report descriptor=]
+          allows a device to describe its own capabilities, and this
+          information can be used to block classes of devices even when the
+          [=vendor ID=] and [=product ID=] cannot be known in advance. This can
+          be accomplished by inspecting the [=HID usage=] values assigned to
+          collections within the [=report descriptor=]; for instance, access to
+          keyboard-like devices can be denied by denying access to devices that
+          include a [=top-level collection=] with the [=HID usage=] for a
+          keyboard.
         </p>
         <p>
           To mitigate abuse, a device will not be made available to the page
@@ -872,7 +873,7 @@
         </li>
         <li>Set |reportItem|["{{HIDReportItem/isRange}}"] to `true` if
         |reportItem|["{{HIDReportItem/usageMinimum}}"] is less than
-        |reportItem|["{{HIDReportItem/usageMaximum}}"].
+        |reportItem|["{{HIDReportItem/usageMaximum}}"], or `false` otherwise.
         </li>
         <li>If `"stringMinimum"` is in |localState| and `"stringMaximum"` is in
         |localState|:
@@ -1091,63 +1092,88 @@
               <dfn>vendorId</dfn> member
             </dt>
             <dd>
-              The vendor ID to match.
+              The [=vendor ID=] to match.
             </dd>
             <dt>
               <dfn>productId</dfn> member
             </dt>
             <dd>
-              The product ID to match.
+              The [=product ID=] to match. If the {{HIDDeviceFilter/vendorId}}
+              member is not present, {{HIDDeviceFilter/productId}} is ignored.
             </dd>
             <dt>
               <dfn>usagePage</dfn> member
             </dt>
             <dd>
-              The [=top-level collection=] [=Usage Page=] to match.
+              The [=top-level collection=] [=usage page=] to match.
             </dd>
             <dt>
               <dfn>usage</dfn> member
             </dt>
             <dd>
-              The [=top-level collection=] [=Usage ID=] to match.
+              The [=top-level collection=] [=usage ID=] to match. If the
+              {{HIDDeviceFilter/usagePage}} member is not present,
+              {{HIDDeviceFilter/usage}} is ignored.
             </dd>
           </dl>
+          <div class="note">
+            <p>
+              Device filters are used to narrow the list of devices presented
+              to the user in the chooser dialog created by
+              {{HID/requestDevice()}}. When no filters are provided, all
+              connected devices are included. When one or more filters are
+              provided, a device is included if any filter matches.
+            </p>
+            <p>
+              All {{HIDDeviceFilter}} members are optional. Each member
+              specifies a rule. To match a {{HIDDeviceFilter}}, every rule must
+              be satisfied. An empty {{HIDDeviceFilter}} matches any device.
+            </p>
+            <p>
+              Device ID rules are used to select devices by their [=vendor ID=]
+              and [=product ID=]. This is useful when an application is only
+              designed to work with a specific device, or otherwise relies on
+              vendor-specific functionality. Including a
+              {{HIDDeviceFilter/vendorId}} rule causes the filter to only match
+              devices with the specified [=vendor ID=]. If a
+              {{HIDDeviceFilter/productId}} rule is also included, the filter
+              will only match devices with the specified [=vendor ID=] and
+              [=product ID=]. {{HIDDeviceFilter/productId}} is ignored if it is
+              specified without a {{HIDDeviceFilter/vendorId}} rule.
+            </p>
+            <p>
+              Usage rules are used to select devices by the [=HID usages=]
+              assigned to the [=top-level collections=] of the device. This is
+              useful when an application is designed to work with a standard
+              class of device. To match a device, at least one of the device's
+              collections must match every usage rule. Including a
+              {{HIDDeviceFilter/usagePage}} rule causes the filter to only
+              match if the device contains a collection with the specified
+              [=usage page=]. If a {{HIDDeviceFilter/usage}} rule is also
+              included, the filter will only match devices with the specified
+              [=usage page=] and [=usage ID=]. {{HIDDeviceFilter/usage}} is
+              ignored if it is specified without a
+              {{HIDDeviceFilter/usagePage}} rule.
+            </p>
+            <p>
+              Device ID rules and usage rules may be combined. For instance, an
+              application may want to match devices from a particular vendor,
+              but only devices that implement a specific device class.
+            </p>
+          </div>
           <p>
-            A {{HIDDevice}} |device:HIDDevice| <dfn data-lt=
-            "match the filter">matches the filter</dfn>
-            |filter:HIDDeviceFilter| if these steps return `true`:
+            A {{HIDDevice}} |device:HIDDevice| <dfn>matches any filter</dfn> in
+            a sequence |filters:sequence&lt;HIDDeviceFilter&gt;| of
+            {{HIDDeviceFilter}} if these steps return `true`:
           </p>
           <ol>
-            <li>If |filter|["{{HIDDeviceFilter/vendorId}}"] is present:
-              <ol>
-                <li>If |filter| contains "{{HIDDeviceFilter/productId}}" and
-                |device|["{{HIDDevice/productId}}"] is not equal to
-                |filter|["{{HIDDeviceFilter/productId}}"], return `false`.
-                </li>
-                <li>If |device|["{{HIDDevice/vendorId}}"] is not equal to
-                |filter|["{{HIDDeviceFilter/vendorId}}"], return `false`.
-                </li>
-              </ol>
+            <li>If |filters| is empty, then return `true`.
             </li>
-            <li>If |filter|["{{HIDDeviceFilter/usagePage}}"] is present:
+            <li>Repeat for each |filter:HIDDeviceFilter| of |filters|:
               <ol>
-                <li>Repeat for each {{HIDCollectionInfo}}
-                |collection:HIDCollectionInfo| of
-                |device|.{{HIDDevice/collections}}:
-                  <ol>
-                    <li>If |collection|["{{HIDCollectionInfo/usagePage}}"] is
-                    equal to |filter|["{{HIDDeviceFilter/usagePage}}"]:
-                      <ol>
-                        <li>If |filter| does not contain
-                        "{{HIDDeviceFilter/usage}}", then return `true`.
-                        </li>
-                        <li>If |collection|["{{HIDCollectionInfo/usage}}"] is
-                        equal to |filter|["{{HIDDeviceFilter/usage}}"], then
-                        return `true`.
-                        </li>
-                      </ol>
-                    </li>
-                  </ol>
+                <li>If |filter| [=matches the device IDs=] of |device| and
+                |filter| [=matches any collection=] of |device|, then return
+                `true`.
                 </li>
               </ol>
             </li>
@@ -1155,21 +1181,61 @@
             </li>
           </ol>
           <p>
-            A {{HIDDevice}} |device:HIDDevice| <dfn>matches any filter</dfn> in
-            a sequence |filters:sequence&lt;HIDDeviceFilter&gt;| of
-            {{HIDDeviceFilter}} if these steps return `true`:
+            A {{HIDDeviceFilter}} |filter:HIDDeviceFilter| <dfn>matches the
+            device IDs</dfn> of |device:HIDDevice| if these steps return
+            `true`:
           </p>
           <ol>
-            <li>If |filters| is empty, return `true`.
-            </li>
-            <li>Repeat for each |filter:HIDDeviceFilter| of |filters|:
+            <li>If "{{HIDDeviceFilter/vendorId}}" is in |filter|:
               <ol>
-                <li>If |device| does not [=match the filter=] |filter|, return
-                `true`.
+                <li>If |filter|["{{HIDDeviceFilter/vendorId}}"] is not equal to
+                |device|.{{HIDDevice/vendorId}}, then return `false`.
+                </li>
+                <li>If "{{HIDDeviceFilter/productId}}" is in |filter| and
+                |filter|["{{HIDDeviceFilter/productId}}"] is not equal to
+                |device|.{{HIDDevice/productId}}, then return `false`.
+                </li>
+              </ol>
+            </li>
+            <li>Return `true`.
+            </li>
+          </ol>
+          <p>
+            A {{HIDDeviceFilter}} |filter:HIDDeviceFilter| <dfn>matches any
+            collection</dfn> of |device:HIDDevice| if these steps return
+            `true`:
+          </p>
+          <ol>
+            <li>Repeat for each |collection:HIDCollectionInfo| of
+            |device|.{{HIDDevice/collections}}:
+              <ol>
+                <li>If |filter| [=matches the collection=] |collection| then
+                return `true`.
                 </li>
               </ol>
             </li>
             <li>Return `false`.
+            </li>
+          </ol>
+          <p>
+            A {{HIDDeviceFilter}} |filter:HIDDeviceFilter| <dfn>matches the
+            collection</dfn> |collection:HIDCollectionInfo| if these steps
+            return `true`:
+          </p>
+          <ol>
+            <li>If "{{HIDDeviceFilter/usagePage}}" is in |filter|:
+              <ol>
+                <li>If |filter|["{{HIDDeviceFilter/usagePage}}"] is not equal
+                to |collection|.{{HIDCollectionInfo/usagePage}}, then return
+                `false`.
+                </li>
+                <li>If "{{HIDCollectionInfo/usage}}" is in |filter| and
+                |filter|["{{HIDDeviceFilter/usage}}"] is not equal to
+                |collection|.{{HIDCollectionInfo/usage}}, then return `false`.
+                </li>
+              </ol>
+            </li>
+            <li>Return `true`.
             </li>
           </ol>
         </section>
@@ -1948,23 +2014,23 @@
         </dt>
         <dd>
           <p>
-            The [=Usage Page=] component of the [=HID usage=] associated with
+            The [=usage page=] component of the [=HID usage=] associated with
             this collection.
           </p>
           <p>
             <dfn>HID usages</dfn> are constants that can be interpreted by an
             application to identify the purpose and meaning of an item or
             collection. A [=HID usage=] is an `unsigned long` value composed of
-            an `unsigned short` <dfn>Usage Page</dfn> in the high order bits
-            and an `unsigned short` <dfn>Usage ID</dfn> in the low order bits.
+            an `unsigned short` <dfn>usage page</dfn> in the high order bits
+            and an `unsigned short` <dfn>usage ID</dfn> in the low order bits.
             Standard [=HID usage=] values are described in the <a href=
             "https://usb.org/document-library/hid-usage-tables-122">HID Usage
             Tables</a> document and other documents published by the <a href=
             "https://www.usb.org/hid">USB Implementers Forum</a>.
           </p>
           <p>
-            The Usage for a [=top-level collection=] is used to identify the
-            general device type.
+            The [=HID usages=] of the [=top-level collections=] exposed by the
+            device is used to identify the general device type.
           </p>
         </dd>
         <dt>
@@ -1972,12 +2038,12 @@
         </dt>
         <dd>
           <p>
-            The [=Usage ID=] component of the [=HID usage=] associated with
+            The [=usage ID=] component of the [=HID usage=] associated with
             this collection.
           </p>
           <p>
-            A [=Usage ID=] is used to select an individual [=HID usage=] on a
-            [=Usage Page=]. By convention, [=Usage IDs=] 0x01 through 0x1F are
+            A [=usage ID=] is used to select an individual [=HID usage=] on a
+            [=usage page=]. By convention, [=usage IDs=] 0x01 through 0x1F are
             reserved for [=top-level collections=].
           </p>
         </dd>
@@ -2275,7 +2341,7 @@
           <p>
             If {{HIDReportItem/isRange}} is `true` or this item has no
             associated [=HID usage=] values, then {{HIDReportItem/usages}} MUST
-            be an empty sequence.
+            be undefined.
           </p>
           <p>
             If {{HIDReportItem/isRange}} is `false` then
@@ -2294,7 +2360,7 @@
           </p>
           <p>
             If {{HIDReportItem/isRange}} is `false` then
-            {{HIDReportItem/usageMinimum}} MUST be 0.
+            {{HIDReportItem/usageMinimum}} MUST be undefined.
           </p>
         </dd>
         <dt>
@@ -2308,7 +2374,7 @@
           </p>
           <p>
             If {{HIDReportItem/isRange}} is `false` then
-            {{HIDReportItem/usageMaximum}} MUST be 0.
+            {{HIDReportItem/usageMaximum}} MUST be undefined.
           </p>
         </dd>
         <dt>
@@ -2531,9 +2597,9 @@
           generate connection events until permission has been granted to
           access the device. The page may request permission using
           {{HID/requestDevice()}}. In this example, the page requests access to
-          a device with vendor ID `0xABCD`, product ID `0x1234`. The device
-          must also have a collection with usage page Consumer (`0x0C`) and
-          usage ID Consumer Control (`0x01`).
+          a device with [=vendor ID=] `0xABCD`, [=product ID=] `0x1234`. The
+          device must also have a collection with [=usage page=] Consumer
+          (`0x000C`) and [=usage ID=] Consumer Control (`0x0001`).
         </p>
         <pre class="js">
           let requestButton = document.getElementById("request-hid-device");
@@ -2545,8 +2611,8 @@
                   {
                     vendorId: 0xabcd,
                     productId: 0x1234,
-                    usagePage: 0x0c,
-                    usage: 0x01,
+                    usagePage: 0x000c,
+                    usage: 0x0001,
                   },
                 ],
               });
