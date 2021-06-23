@@ -131,14 +131,14 @@
           In some cases, a device may expose functionality that should not be
           accessible at all from a web page. Specific devices may be blocked by
           recognizing the device by its vendor and product ID and hiding such
-          devices during enumeration. The [=Report descriptor=] allows a device
+          devices during enumeration. The [=report descriptor=] allows a device
           to describe its own capabilities, and this information can be used to
           block classes of devices even when the vendor and product ID cannot
           be known in advance. This can be accomplished by inspecting the [=HID
-          Usage=] values assigned to collections within the [=Report
+          usage=] values assigned to collections within the [=report
           descriptor=]; for instance, access to keyboard-like devices can be
           denied by denying access to devices that include a [=top-level
-          collection=] with the [=HID Usage=] for a keyboard.
+          collection=] with the [=HID usage=] for a keyboard.
         </p>
         <p>
           To mitigate abuse, a device will not be made available to the page
@@ -226,35 +226,6 @@
             [SameObject] readonly attribute HID hid;
         };
       </pre>
-      <p>
-        Instances of {{Navigator}} are created with the internal slots
-        described in the following table:
-      </p>
-      <table class="simple" dfn-for="Navigator">
-        <tr>
-          <th>
-            Internal slot
-          </th>
-          <th>
-            Initial value
-          </th>
-          <th>
-            Description (non-normative)
-          </th>
-        </tr>
-        <tr>
-          <td>
-            <dfn data-dfn-for="Navigator">[[\hidDevices]]</dfn>
-          </td>
-          <td>
-            An empty [=ordered set=].
-          </td>
-          <td>
-            An [=ordered set=] of {{HIDDevice}} instances representing the
-            [=HID interfaces=] currently available on the system.
-          </td>
-        </tr>
-      </table>
       <h3>
         <dfn>hid</dfn> attribute
       </h3>
@@ -277,6 +248,35 @@
                 HIDDeviceRequestOptions options);
         };
       </pre>
+      <p>
+        Instances of {{HID}} are created with the internal slots described in
+        the following table:
+      </p>
+      <table class="simple" dfn-for="HID">
+        <tr>
+          <th>
+            Internal slot
+          </th>
+          <th>
+            Initial value
+          </th>
+          <th>
+            Description (non-normative)
+          </th>
+        </tr>
+        <tr>
+          <td>
+            <dfn data-dfn-for="HID">[[\devices]]</dfn>
+          </td>
+          <td>
+            An empty [=ordered set=]
+          </td>
+          <td>
+            An [=ordered set=] of {{HIDDevice}} instances representing the
+            [=HID interfaces=] currently available on the system
+          </td>
+        </tr>
+      </table>
       <dl>
         <dt>
           <dfn>onconnect</dfn> attribute
@@ -299,61 +299,71 @@
       </p>
       <div class="note">
         <p>
-          A <dfn>HID interface</dfn> is logical interface that can be used to
+          A <dfn>HID interface</dfn> is a logical interface that can be used to
           communicate with a device over the HID protocol. Each [=HID
-          interface=] has exactly one [=Report descriptor=] that describes the
+          interface=] has exactly one [=report descriptor=] that describes the
           set of reports supported by that interface. A single physical device
           may expose more than one [=HID interface=]. Devices with multiple
           [=HID interfaces=] run these steps once for each interface.
         </p>
+        <p>
+          For example, USB devices are implemented as a collection of
+          interfaces, each of which may specify an interface class.
+          When a device has multiple USB interfaces that use the HID class,
+          each interface is enumerated as a separate [=HID interface=].
+        </p>
       </div>
       <ol>
+        <li>Let |hid:HID| be the {{HID}} instance that is returned by
+        [=this=]'s [=relevant global object=]'s {{Navigator}} object's
+        {{Navigator/hid}} getter.
+        </li>
         <li>Let |device:HIDDevice| be a {{HIDDevice}}.
         </li>
-        <li>Set |device|.{{HIDDevice/vendorId}} to the [=vendor ID=] of the
+        <li>Set |device|.{{HIDDevice/[[vendorId]]}} to the [=vendor ID=] of the
         device that exposes the interface.
         </li>
-        <li>Set |device|.{{HIDDevice/productId}} to the [=product ID=] of the
-        device that exposes the interface.
-        </li>
-        <li>Set |device|.{{HIDDevice/productName}} to the [=product name=] of
+        <li>Set |device|.{{HIDDevice/[[productId]]}} to the [=product ID=] of
         the device that exposes the interface.
         </li>
-        <li>Set |device|.{{HIDDevice/collections}} to the result of [=parsing
-        the Report descriptor=].
+        <li>Set |device|.{{HIDDevice/[[productName]]}} to the [=product name=]
+        of the device that exposes the interface.
         </li>
-        <li>Append |device| to |navigator|.{{Navigator/[[hidDevices]]}}.
+        <li>Set |device|.{{HIDDevice/[[collections]]}} to the result of
+        [=parsing the Report descriptor=].
+        </li>
+        <li>Append |device| to |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
         of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
-        named {{connect}} at |hid:HID| using {{HIDConnectionEvent}} with its
+        named {{connect}} at |hid| using {{HIDConnectionEvent}} with its
         {{HIDConnectionEvent/device}} attribute initialized to |device|.
         </li>
       </ol>
       <p>
-        To <dfn data-lt="parsing the Report descriptor">parse the Report
+        To <dfn data-lt="parsing the report descriptor">parse the report
         descriptor</dfn>, run the following steps:
       </p>
       <ol>
         <div class="note">
           <p>
-            The system will typically read the [=Report descriptor=] [=byte
+            The system will typically read the [=report descriptor=] [=byte
             sequence=] for each [=HID interface=] when a device is first
             connected and cache the values in the system registry. If the
-            [=Report descriptor=] is not available but the system provides
+            [=report descriptor=] is not available but the system provides
             information that can be used to reconstruct the layout of each
             report, the user agent may use an alternate algorithm instead of
-            parsing the [=Report descriptor=].
+            parsing the [=report descriptor=].
           </p>
           <p>
-            The [=Report descriptor=] format is described in <a href=
+            The [=report descriptor=] format is described in <a href=
             "https://www.usb.org/document-library/device-class-definition-hid-111">
             Device Class Definition for HID 1.11</a> section 6.2.2. The
             algorithm below is intended to implement the same parsing algorithm
             described in that section.
           </p>
           <p>
-            The [=Report descriptor=] contains three classes of items.
+            The [=report descriptor=] contains three classes of items.
             <dfn>Main items</dfn> are used to define and group data fields.
             <dfn>Global items</dfn> and <dfn>Local items</dfn> describe the
             data fields. [=Local items=] define characteristics that only apply
@@ -368,7 +378,7 @@
             field=]. Each item also has a tag that identifies its type.
           </p>
         </div>
-        <li>Let |items| be the result of converting the [=Report descriptor=]
+        <li>Let |items| be the result of converting the [=report descriptor=]
         [=byte sequence=] into a [=list=] of [=Main items=], [=Global items=],
         and [=Local items=].
         </li>
@@ -389,31 +399,40 @@
         </li>
         <li>Initialize |reportId| to 0.
         </li>
-        <li>Set |initialGlobalState|[`"unitSystem"`] to
-        {{HIDUnitSystem/`"none"`}}.
+        <li>Set |initialGlobalState|["{{HIDReportItem/unitSystem}}"] to
+        {{HIDUnitSystem/"none"}}.
         </li>
-        <li>Set |initialGlobalState|[`"unitExponent"`] to 0.
+        <li>Set |initialGlobalState|["{{HIDReportItem/unitExponent}}"] to 0.
         </li>
-        <li>Set |initialGlobalState|[`"unitFactorLengthExponent"`] to 0.
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorLengthExponent}}"] to
+        0.
         </li>
-        <li>Set |initialGlobalState|[`"unitFactorMassExponent"`] to 0.
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorMassExponent}}"] to 0.
         </li>
-        <li>Set |initialGlobalState|[`"unitFactorTimeExponent"`] to 0.
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorTimeExponent}}"] to 0.
         </li>
-        <li>Set |initialGlobalState|[`"unitFactorTemperatureExponent"`] to 0.
-        </li>
-        <li>Set |initialGlobalState|[`"unitFactorCurrentExponent"`] to 0.
-        </li>
-        <li>Set |initialGlobalState|[`"unitFactorLuminousIntensityExponent"`]
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorTemperatureExponent}}"]
         to 0.
         </li>
-        <li>Set |initialGlobalState|[`"logicalMinimum"`] to 0.
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorCurrentExponent}}"] to
+        0.
         </li>
-        <li>Set |initialGlobalState|[`"logicalMaximum"`] to 0.
+        <li>Set
+        |initialGlobalState|["{{HIDReportItem/unitFactorLuminousIntensityExponent}}"]
+        to 0.
         </li>
-        <li>Set |initialGlobalState|[`"physicalMinimum"`] to 0.
+        <li>Set |initialGlobalState|["{{HIDReportItem/logicalMinimum}}"] to 0.
         </li>
-        <li>Set |initialGlobalState|[`"physicalMaximum"`] to 0.
+        <li>Set |initialGlobalState|["{{HIDReportItem/logicalMaximum}}"] to 0.
+        </li>
+        <li>Set |initialGlobalState|["{{HIDReportItem/physicalMinimum}}"] to 0.
+        </li>
+        <li>Set |initialGlobalState|["{{HIDReportItem/physicalMaximum}}"] to 0.
         </li>
         <li>Push |initialGlobalState| onto |globalStack|.
         </li>
@@ -445,22 +464,31 @@
                   <ol>
                     <li>Let |globalState| be the last item of |globalStack|.
                     </li>
-                    <li>Let |reportId:octet| be |globalState|[`"reportId"`].
+                    <li>Let |reportId:octet| be
+                    |globalState|["{{HIDReportInfo/reportId}}"].
                     </li>
                     <li>Let |reportItem:HIDReportItem| be the result of
                     [=creating a HID report item=] with |item|, |localState|,
                     |globalState|, |usages|, and |strings|.
                     </li>
-                    <li>For each |collection:HIDCollectionInfo| of |ancestors|:
+                    <li>Repeat for each |collection:HIDCollectionInfo| of
+                    |ancestors|:
                       <ol>
-                        <li>Let |reports:sequence&lt;HIDCollectionInfo&gt;|
-                        be:<br>
-                          |collection|.{{HIDCollectionInfo/inputReports}} if
-                          |item| has the [=Input tag=],<br>
-                          |collection|.{{HIDCollectionInfo/outputReports}} if
-                          |item| has the [=Output tag=], or<br>
-                          |collection|.{{HIDCollectionInfo/featureReports}} if
-                          |item| has the [=Feature tag=].
+                        <li>Let |reports:sequence&lt;HIDCollectionInfo&gt;| be:
+                          <ul>
+                            <li>
+                            |collection|["{{HIDCollectionInfo/inputReports}}"]
+                            if |item| has the [=Input tag=],
+                            </li>
+                            <li>
+                            |collection|["{{HIDCollectionInfo/outputReports}}"]
+                            if |item| has the [=Output tag=], or
+                            </li>
+                            <li>
+                            |collection|["{{HIDCollectionInfo/featureReports}}"]
+                            if |item| has the [=Feature tag=].
+                            </li>
+                          </ul>
                         </li>
                         <li>
                           <p>
@@ -472,20 +500,21 @@
                             Otherwise:
                           </p>
                           <ol>
-                            <li>Let |report:HIDReportInfo| be a
-                            {{HIDReportInfo}}.
+                            <li>Let |report:HIDReportInfo| be a [=new=]
+                            {{HIDReportInfo}} dictionary.
                             </li>
-                            <li>Set |report|.{{HIDReportInfo/reportId}} to
+                            <li>Set |report|["{{HIDReportInfo/reportId}}"] to
                             |reportId|.
                             </li>
-                            <li>Set |report|.{{HIDReportInfo/items}} to an
+                            <li>Set |report|["{{HIDReportInfo/items}}"] to an
                             empty sequence of {{HIDReportItem}}.
                             </li>
                             <li>Append |report| to |reports|.
                             </li>
                           </ol>
                         </li>
-                        <li>Append |item| to |report|.{{HIDReportInfo/items}}.
+                        <li>Append |item| to
+                        |report|["{{HIDReportInfo/items}}"].
                         </li>
                       </ol>
                     </li>
@@ -493,34 +522,35 @@
                 </li>
                 <li>If |item| has the [=Collection tag=]:
                   <ol>
-                    <li>Let |collection:HIDCollectionInfo| be a
-                    {{HIDCollectionInfo}}.
+                    <li>Let |collection:HIDCollectionInfo| be a [=new=]
+                    {{HIDCollectionInfo}} dictionary.
                     </li>
                     <li>Let |usage| be the first item of |usages|.
                     </li>
                     <li>If the size of |usages| is greater than 1, remove the
                     first item of |usages|.
                     </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/usagePage}} to
-                    |globalState|[`"usagePage"`].
+                    <li>Set |collection|["{{HIDCollectionInfo/usagePage}}"] to
+                    |globalState|["{{HIDCollectionInfo/usagePage}}"].
                     </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/usage}} to
+                    <li>Set |collection|["{{HIDCollectionInfo/usage}}"] to
                     |usage|.
                     </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/type}} to the
+                    <li>Set |collection|["{{HIDCollectionInfo/type}}"] to the
                     value representing the collection's type.
                     </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/children}} to an
-                    empty sequence of {{HIDCollectionInfo}}.
+                    <li>Set |collection|["{{HIDCollectionInfo/children}}"] to
+                    an empty sequence of {{HIDCollectionInfo}}.
                     </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/inputReports}} to
-                    an empty sequence of {{HIDReportInfo}}.
-                    </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/outputReports}} to
-                    an empty sequence of {{HIDReportInfo}}.
-                    </li>
-                    <li>Set |collection|.{{HIDCollectionInfo/featureReports}}
+                    <li>Set |collection|["{{HIDCollectionInfo/inputReports}}"]
                     to an empty sequence of {{HIDReportInfo}}.
+                    </li>
+                    <li>Set |collection|["{{HIDCollectionInfo/outputReports}}"]
+                    to an empty sequence of {{HIDReportInfo}}.
+                    </li>
+                    <li>Set
+                    |collection|["{{HIDCollectionInfo/featureReports}}"] to an
+                    empty sequence of {{HIDReportInfo}}.
                     </li>
                     <li>
                       <p>
@@ -535,7 +565,7 @@
                         |ancestors|.
                         </li>
                         <li>Append |collection| to
-                        |parent|.{{HIDCollectionInfo/children}}.
+                        |parent|["{{HIDCollectionInfo/children}}"].
                         </li>
                       </ol>
                     </li>
@@ -576,28 +606,33 @@
                     interpreted as an `unsigned long`.
                     </li>
                     <li>If |item| has the [=Usage Page tag=], then set
-                    |globalState|[`"usagePage"`] to |value|.
+                    |globalState|["{{HIDCollectionInfo/usagePage}}"] to
+                    |value|.
                     </li>
                     <li>If |item| has the [=Logical Minimum tag=], then set
-                    |globalState|[`"logicalMinimum"`] to |value|.
+                    |globalState|["{{HIDReportItem/logicalMinimum}}"] to
+                    |value|.
                     </li>
                     <li>If |item| has the [=Logical Maximum tag=], then set
-                    |globalState|[`"logicalMaximum"`] to |value|.
+                    |globalState|["{{HIDReportItem/logicalMaximum}}"] to
+                    |value|.
                     </li>
                     <li>If |item| has the [=Physical Minimum tag=], then set
-                    |globalState|[`"physicalMinimum"`] to |value|.
+                    |globalState|["{{HIDReportItem/physicalMinimum}}"] to
+                    |value|.
                     </li>
                     <li>If |item| has the [=Physical Maximum tag=], then set
-                    |globalState|[`"physicalMaximum"`] to |value|.
+                    |globalState|["{{HIDReportItem/physicalMaximum}}"] to
+                    |value|.
                     </li>
                     <li>If |item| has the [=Report Size tag=], then set
-                    |globalState|[`"reportSize"`] to |value|.
+                    |globalState|["{{HIDReportItem/reportSize}}"] to |value|.
                     </li>
                     <li>If |item| has the [=Report ID tag=], then set
-                    |globalState|[`"reportId"`] to |value|.
+                    |globalState|["{{HIDReportInfo/reportId}}"] to |value|.
                     </li>
                     <li>If |item| has the [=Report Count tag=], then set
-                    |globalState|[`"reportCount"`] to |value|.
+                    |globalState|["{{HIDReportItem/reportCount}}"] to |value|.
                     </li>
                     <li>If |item| has the [=Unit tag=]:
                       <ol>
@@ -605,48 +640,68 @@
                         as a sequence of eight 4-bit signed two's complement
                         integers starting from the low-order bits.
                         </li>
-                        <li>If |nibbles|[0] is:<br>
-                          0, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"none"`}}<br>
-                          1, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"si-linear"`}}<br>
-                          2, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"si-rotation"`}}<br>
-                          3, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"english-linear"`}}<br>
-                          4, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"english-rotation"`}}<br>
-                          -1, then set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"vendor-defined"`}}<br>
-                          Otherwise, set |globalState|[`"unitSystem"`] to
-                          {{HIDUnitSystem/`"reserved"`}}
-                        </li>
-                        <li>Set |globalState|[`"unitFactorLengthExponent"`] to
-                        |nibbles|[1].
-                        </li>
-                        <li>Set |globalState|[`"unitFactorMassExponent"`] to
-                        |nibbles|[2].
-                        </li>
-                        <li>Set |globalState|[`"unitFactorTimeExponent"`] to
-                        |nibbles|[3].
+                        <li>If |nibbles|[0] is:
+                          <ul>
+                            <li>0, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"none"}}
+                            </li>
+                            <li>1, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"si-linear"}}
+                            </li>
+                            <li>2, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"si-rotation"}}
+                            </li>
+                            <li>3, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"english-linear"}}
+                            </li>
+                            <li>4, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"english-rotation"}}
+                            </li>
+                            <li>-1, then set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"vendor-defined"}}
+                            </li>
+                            <li>Otherwise, set
+                            |globalState|["{{HIDReportItem/unitSystem}}"] to
+                            {{HIDUnitSystem/"reserved"}}
+                            </li>
+                          </ul>
                         </li>
                         <li>Set
-                        |globalState|[`"unitFactorTemperatureExponent"`] to
-                        |nibbles|[4].
-                        </li>
-                        <li>Set |globalState|[`"unitFactorCurrentExponent"`] to
-                        |nibbles|[5].
+                        |globalState|["{{HIDReportItem/unitFactorLengthExponent}}"]
+                        to |nibbles|[1].
                         </li>
                         <li>Set
-                        |globalState|[`"unitFactorLuminousIntensityExponent"`]
+                        |globalState|["{{HIDReportItem/unitFactorMassExponent}}"]
+                        to |nibbles|[2].
+                        </li>
+                        <li>Set
+                        |globalState|["{{HIDReportItem/unitFactorTimeExponent}}"]
+                        to |nibbles|[3].
+                        </li>
+                        <li>Set
+                        |globalState|["{{HIDReportItem/unitFactorTemperatureExponent}}"]
+                        to |nibbles|[4].
+                        </li>
+                        <li>Set
+                        |globalState|["{{HIDReportItem/unitFactorCurrentExponent}}"]
+                        to |nibbles|[5].
+                        </li>
+                        <li>Set
+                        |globalState|["{{HIDReportItem/unitFactorLuminousIntensityExponent}}"]
                         to |nibbles|[6].
                         </li>
                       </ol>
                     </li>
                     <li>If |item| has the [=Unit Exponent tag=], then set
-                    |globalState|[`"unitExponent"`] to the result of
-                    interpreting the lowest 4 bits of the [=item data field=]
-                    as a signed two's complement integer.
+                    |globalState|["{{HIDReportItem/unitExponent}}"] to the
+                    result of interpreting the lowest 4 bits of the [=item data
+                    field=] as a signed two's complement integer.
                     </li>
                     <li>If |item| has the [=Push tag=], then push a copy of
                     |globalState| onto |globalStack|.
@@ -684,9 +739,9 @@
                         <li>Let |globalState| be the last item of
                         |globalStack|.
                         </li>
-                        <li>Set |value| to a [=HID Usage=] composed of
-                        |globalState|[`"usagePage"`] in the high order bits and
-                        |usageId| in the low order bits.
+                        <li>Set |value| to a [=HID usage=] composed of
+                        |globalState|["{{HIDCollectionInfo/usagePage}}"] in the
+                        high order bits and |usageId| in the low order bits.
                         </li>
                       </ol>
                     </li>
@@ -695,10 +750,10 @@
                   </ol>
                 </li>
                 <li>If |item| has the [=Usage Minimum tag=], then set
-                |localState|[`"usageMinimum"`] to |value|.
+                |localState|["{{HIDReportItem/usageMinimum}}"] to |value|.
                 </li>
                 <li>If |item| has the [=Usage Maximum tag=], then set
-                |localState|[`"usageMaximum"`] to |value|.
+                |localState|["{{HIDReportItem/usageMaximum}}"] to |value|.
                 </li>
                 <li>If |item| has the [=String Index tag=], then append |value|
                 to |stringIndices|.
@@ -720,7 +775,8 @@
         |stringIndices|, run the following steps:
       </p>
       <ol>
-        <li>Let |reportItem:HIDReportItem| be a {{HIDReportItem}}.
+        <li>Let |reportItem:HIDReportItem| be a [=new=] {{HIDReportItem}}
+        dictionary.
         </li>
         <li>Let |value:unsigned long| be the [=item data field=] interpreted as
         an `unsigned long`.
@@ -728,94 +784,95 @@
         <li>Let |bitfield| be a [=list=] of `boolean` values representing each
         of the bits of |value|, starting from the low-order bits.
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isConstant}} to |bitfield|[0].
+        <li>Set |reportItem|["{{HIDReportItem/isConstant}}"] to |bitfield|[0].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isArray}} to !|bitfield|[1].
+        <li>Set |reportItem|["{{HIDReportItem/isArray}}"] to !|bitfield|[1].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isAbsolute}} to !|bitfield|[2].
+        <li>Set |reportItem|["{{HIDReportItem/isAbsolute}}"] to !|bitfield|[2].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/wrap}} to |bitfield|[3].
+        <li>Set |reportItem|["{{HIDReportItem/wrap}}"] to |bitfield|[3].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isLinear}} to !|bitfield|[4].
+        <li>Set |reportItem|["{{HIDReportItem/isLinear}}"] to !|bitfield|[4].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/hasPreferredState}} to
+        <li>Set |reportItem|["{{HIDReportItem/hasPreferredState}}"] to
         |bitfield|[5].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/hasNull}} to |bitfield|[6].
+        <li>Set |reportItem|["{{HIDReportItem/hasNull}}"] to |bitfield|[6].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isVolatile}} to |bitfield|[7].
+        <li>Set |reportItem|["{{HIDReportItem/isVolatile}}"] to |bitfield|[7].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isBufferedBytes}} to
+        <li>Set |reportItem|["{{HIDReportItem/isBufferedBytes}}"] to
         |bitfield|[8].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/usages}} to |usages|.
+        <li>Set |reportItem|["{{HIDReportItem/usages}}"] to |usages|.
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/reportSize}} to
-        |globalState|[`"reportSize"`].
+        <li>Set |reportItem|["{{HIDReportItem/reportSize}}"] to
+        |globalState|["{{HIDReportItem/reportSize}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/reportCount}} to
-        |globalState|[`"reportCount"`].
+        <li>Set |reportItem|["{{HIDReportItem/reportCount}}"] to
+        |globalState|["{{HIDReportItem/reportCount}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitExponent}} to
-        |globalState|[`"unitExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitExponent}}"] to
+        |globalState|["{{HIDReportItem/unitExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitSystem}} to
-        |globalState|[`"unitSystem"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitSystem}}"] to
+        |globalState|["{{HIDReportItem/unitSystem}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitFactorLengthExponent}} to
-        |globalState|[`"unitFactorLengthExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitFactorLengthExponent}}"] to
+        |globalState|["{{HIDReportItem/unitFactorLengthExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitFactorMassExponent}} to
-        |globalState|[`"unitFactorMassExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitFactorMassExponent}}"] to
+        |globalState|["{{HIDReportItem/unitFactorMassExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitFactorTimeExponent}} to
-        |globalState|[`"unitFactorTimeExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitFactorTimeExponent}}"] to
+        |globalState|["{{HIDReportItem/unitFactorTimeExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitFactorTemperatureExponent}} to
-        |globalState|[`"unitFactorTemperatureExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitFactorTemperatureExponent}}"]
+        to |globalState|["{{HIDReportItem/unitFactorTemperatureExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/unitFactorCurrentExponent}} to
-        |globalState|[`"unitFactorCurrentExponent"`].
+        <li>Set |reportItem|["{{HIDReportItem/unitFactorCurrentExponent}}"] to
+        |globalState|["{{HIDReportItem/unitFactorCurrentExponent}}"].
         </li>
         <li>Set
-        |reportItem|.{{HIDReportItem/unitFactorLuminousIntensityExponent}} to
-        |globalState|[`"unitFactorLuminousIntensityExponent"`].
+        |reportItem|["{{HIDReportItem/unitFactorLuminousIntensityExponent}}"]
+        to
+        |globalState|["{{HIDReportItem/unitFactorLuminousIntensityExponent}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/logicalMinimum}} to
-        |globalState|[`"logicalMinimum"`].
+        <li>Set |reportItem|["{{HIDReportItem/logicalMinimum}}"] to
+        |globalState|["{{HIDReportItem/logicalMinimum}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/logicalMaximum}} to
-        |globalState|[`"logicalMaximum"`].
+        <li>Set |reportItem|["{{HIDReportItem/logicalMaximum}}"] to
+        |globalState|["{{HIDReportItem/logicalMaximum}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/physicalMinimum}} to
-        |globalState|[`"physicalMinimum"`].
+        <li>Set |reportItem|["{{HIDReportItem/physicalMinimum}}"] to
+        |globalState|["{{HIDReportItem/physicalMinimum}}"].
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/physicalMaximum}} to
-        |globalState|[`"physicalMaximum"`].
-        </li>
-        <li>
-          <p>
-            If `"usageMinimum"` is in |localState|, then set
-            |reportItem|.{{HIDReportItem/usageMinimum}} to
-            |localState|[`"usageMinimum"`].
-          </p>
-          <p>
-            Otherwise, set |reportItem|.{{HIDReportItem/usageMinimum}} to 0.
-          </p>
+        <li>Set |reportItem|["{{HIDReportItem/physicalMaximum}}"] to
+        |globalState|["{{HIDReportItem/physicalMaximum}}"].
         </li>
         <li>
           <p>
-            If `"usageMaximum"` is in |localState|, then set
-            |reportItem|.{{HIDReportItem/usageMaximum}} to
-            |localState|[`"usageMaximum"`].
+            If "{{HIDReportItem/usageMinimum}}" is in |localState|, then set
+            |reportItem|["{{HIDReportItem/usageMinimum}}"] to
+            |localState|["{{HIDReportItem/usageMinimum}}"].
           </p>
           <p>
-            Otherwise, set |reportItem|.{{HIDReportItem/usageMinimum}} to 0.
+            Otherwise, set |reportItem|["{{HIDReportItem/usageMinimum}}"] to 0.
           </p>
         </li>
-        <li>Set |reportItem|.{{HIDReportItem/isRange}} to `true` if
-        |reportItem|.{{HIDReportItem/usageMinimum}} is less than
-        |reportItem|.{{HIDReportItem/usageMaximum}}.
+        <li>
+          <p>
+            If "{{HIDReportItem/usageMaximum}}" is in |localState|, then set
+            |reportItem|["{{HIDReportItem/usageMaximum}}"] to
+            |localState|["{{HIDReportItem/usageMaximum}}"].
+          </p>
+          <p>
+            Otherwise, set |reportItem|["{{HIDReportItem/usageMinimum}}"] to 0.
+          </p>
+        </li>
+        <li>Set |reportItem|["{{HIDReportItem/isRange}}"] to `true` if
+        |reportItem|["{{HIDReportItem/usageMinimum}}"] is less than
+        |reportItem|["{{HIDReportItem/usageMaximum}}"].
         </li>
         <li>If `"stringMinimum"` is in |localState| and `"stringMaximum"` is in
         |localState|:
@@ -838,7 +895,7 @@
             <li>Let |string| be the result of reading the string descriptor at
             index |stringIndex|.
             </li>
-            <li>Append |string| to |reportItem|.{{HIDReportItem/strings}}.
+            <li>Append |string| to |reportItem|["{{HIDReportItem/strings}}"].
             </li>
           </ol>
         </li>
@@ -850,15 +907,18 @@
         following steps:
       </p>
       <ol>
-        <li>Let |device:HIDDevice| be the {{HIDDevice}} in
-        |navigator:Navigator|.{{Navigator/[[hidDevices]]}} representing the
-        interface.
+        <li>Let |hid:HID| be the {{HID}} instance that is returned by
+        [=this=]'s [=relevant global object=]'s {{Navigator}} object's
+        {{Navigator/hid}} getter.
         </li>
-        <li>Remove |device| from |navigator|.{{Navigator/[[hidDevices]]}}.
+        <li>Let |device:HIDDevice| be the {{HIDDevice}} in
+        |hid|.{{HID/[[devices]]}} representing the interface.
+        </li>
+        <li>Remove |device| from |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
         of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
-        named {{disconnect}} at |hid:HID| using {{HIDConnectionEvent}} with its
+        named {{disconnect}} at |hid| using {{HIDConnectionEvent}} with its
         {{HIDConnectionEvent/device}} attribute initialized to |device|.
         </li>
       </ol>
@@ -879,10 +939,14 @@
           </li>
           <li>Run the following steps [=in parallel=]:
             <ol>
-              <li>Let |devices| be an empty [=list=].
+              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty sequence of {{HIDDevice}}.
+              </li>
+              <li>Let |hid:HID| be the {{HID}} instance that is returned by
+              [=this=]'s [=relevant global object=]'s {{Navigator}} object's
+              {{Navigator/hid}} getter.
               </li>
               <li>Repeat for each |device:HIDDevice| in
-              |navigator:Navigator|.{{Navigator/[[hidDevices]]}}:
+              |hid|.{{HID/[[devices]]}}:
                 <ol>
                   <li>If the user has allowed the site to access |device| as
                   the result of a previous call to {{HID/requestDevice()}},
@@ -904,6 +968,15 @@
         <h3>
           <dfn>requestDevice()</dfn> method
         </h3>
+        <div class="note">
+          <p>
+            The {{HID/requestDevice()}} permission dialog presents a list of connected devices and asks the user to select one.
+          </p>
+          <p>
+            If a device has multiple [=HID interfaces=], the dialog MUST present only a single item that represents all the interfaces.
+            When the user selects an item that represents multiple [=HID interfaces=], the user agent MUST grant access to all the [=HID interfaces=] exposed by the device.
+          </p>
+        </div>
         <p>
           The {{HID/requestDevice()}} method steps are:
         </p>
@@ -924,7 +997,7 @@
           |options|["{{HIDDeviceRequestOptions/filters}}"]:
             <ol>
               <li>If |filter|["{{HIDDeviceFilter/productId}}"] is present and
-              |filter|["{{HIDDeviceFilter/productId}}"] is not present,
+              |filter|["{{HIDDeviceFilter/vendorId}}"] is not present,
               [=reject=] |promise| with a {{TypeError}} and return |promise|.
               </li>
               <li>If |filter|["{{HIDDeviceFilter/usage}}"] is present and
@@ -937,8 +1010,12 @@
             <ol>
               <li>Initialize |availableDevices| to be an empty [=list=].
               </li>
+              <li>Let |hid:HID| be the {{HID}} instance that is returned by
+              [=this=]'s [=relevant global object=]'s {{Navigator}} object's
+              {{Navigator/hid}} getter.
+              </li>
               <li>Repeat for each |device:HIDDevice| in
-              |navigator:Navigator|.{{Navigator/[[hidDevices]]}}:
+              |hid|.{{HID/[[devices]]}}:
                 <ol>
                   <li>If |device| [=matches any filter=] in
                   |options|["{{HIDDeviceRequestOptions/filters}}"], then append
@@ -951,15 +1028,21 @@
               </li>
               <li>If the user does not choose a device, [=queue a global task=]
               on the [=relevant global object=] of [=this=] using the [=HID
-              device task source=] to [=reject=] |promise| with an
-              {{"AbortError"}} {{DOMException}} and abort these steps.
+              device task source=] to [=resolve=] |promise| with an empty
+              sequence of {{HIDDevice}} and abort these steps.
               </li>
-              <li>Let |device:HIDDevice| be the {{HIDDevice}} instance chosen
-              by the user.
+              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty sequence of
+              {{HIDDevice}}.
+              </li>
+              <li>Repeat for each |device:HIDDevice| of |hid|.{{HID/[[devices]]}}:
+                <ol>
+                  <li>If |device| represents a [=HID interface=] exposed by the chosen device, then append |device| to |devices|.
+                  </li>
+                </ol>
               </li>
               <li>[=Queue a global task=] on the [=relevant global object=] of
               [=this=] using the [=HID device task source=] to [=resolve=]
-              |promise| with |device|.
+              |promise| with |devices|.
               </li>
             </ol>
           </li>
@@ -1112,6 +1195,11 @@
         work on the <dfn>HID device task source</dfn>.
       </p>
       <p>
+        The [=get the parent=] algorithm for {{HIDDevice}} returns the same
+        {{HID}} instance that is returned by the {{HIDDevice}}'s [=relevant
+        global object=]'s {{Navigator}} object's {{Navigator/hid}} getter.
+      </p>
+      <p>
         Instances of {{HIDDevice}} are created with the internal slots
         described in the following table:
       </p>
@@ -1136,6 +1224,84 @@
           </td>
           <td>
             Tracks the active state of the {{HIDDevice}}
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\vendorId]]</dfn>
+          </td>
+          <td>
+            0
+          </td>
+          <td>
+            The [=vendor ID=] of the device
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\productId]]</dfn>
+          </td>
+          <td>
+            0
+          </td>
+          <td>
+            The [=product ID=] of the device
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\productName]]</dfn>
+          </td>
+          <td>
+            `""`
+          </td>
+          <td>
+            The [=product name=] of the device
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\collections]]</dfn>
+          </td>
+          <td>
+            An empty sequence of {{HIDCollectionInfo}}
+          </td>
+          <td>
+            The [=top-level collections=] created by [=parsing the report
+            descriptor=]
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\pendingSendReportPromises]]</dfn>
+          </td>
+          <td>
+            An empty [=list=]
+          </td>
+          <td>
+            Pending {{HIDDevice/sendReport()}} {{Promise}}s
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\pendingSendFeatureReportPromises]]</dfn>
+          </td>
+          <td>
+            An empty [=list=]
+          </td>
+          <td>
+            Pending {{HIDDevice/sendFeatureReport()}} {{Promise}}s
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <dfn>[[\pendingReceiveFeatureReportPromises]]</dfn>
+          </td>
+          <td>
+            An empty [=list=]
+          </td>
+          <td>
+            Pending {{HIDDevice/receiveFeatureReport()}} {{Promise}}s
           </td>
         </tr>
       </table>
@@ -1178,6 +1344,13 @@
             device. If the device has no [=vendor ID=] or the [=vendor ID=]
             cannot be accessed, the attribute MUST be 0.
           </p>
+          <p>
+            The {{HIDDevice/vendorId}} getter steps are:
+          </p>
+          <ol>
+            <li>Return [=this=].{{HIDDevice/[[vendorId]]}}.
+            </li>
+          </ol>
         </dd>
         <dt>
           <dfn>productId</dfn> attribute
@@ -1192,6 +1365,13 @@
             device. If the device has no [=product ID=] or the [=product ID=]
             cannot be accessed, the attribute MUST be 0.
           </p>
+          <p>
+            The {{HIDDevice/productId}} getter steps are:
+          </p>
+          <ol>
+            <li>Return [=this=].{{HIDDevice/[[productId]]}}.
+            </li>
+          </ol>
         </dd>
         <dt>
           <dfn>productName</dfn> attribute
@@ -1206,7 +1386,7 @@
             the Device Descriptor. For Bluetooth HID devices, the [=product
             name=] SHOULD contain the value of the Device Name characteristic.
             If the device has no [=product name=] or the [=product name=] is
-            empty or cannot be accessed, the attribute MUST return a non-empty
+            empty or cannot be accessed, the attribute MUST return an empty
             string.
           </p>
           <p>
@@ -1214,6 +1394,13 @@
             identifiers like a serial number or Bluetooth device address that
             could be used to uniquely identify the device.
           </p>
+          <p>
+            The {{HIDDevice/productName}} getter steps are:
+          </p>
+          <ol>
+            <li>Return [=this=].{{HIDDevice/[[productName]]}}.
+            </li>
+          </ol>
         </dd>
         <dt>
           <dfn>collections</dfn> attribute
@@ -1221,11 +1408,18 @@
         <dd>
           <p>
             A sequence of {{HIDCollectionInfo}} representing the [=top-level
-            collections=] in the [=Report descriptor=].
+            collections=] in the [=report descriptor=].
           </p>
+          <p>
+            The {{HIDDevice/collections}} getter steps are:
+          </p>
+          <ol>
+            <li>Return [=this=].{{HIDDevice/[[collections]]}}.
+            </li>
+          </ol>
           <div class="note">
             <dfn>Top-level collections</dfn> group items that serve similar
-            purposes within the device. Applications look at the [=HID Usage=]
+            purposes within the device. Applications look at the [=HID usage=]
             applied to [=top-level collections=] to identify devices. An
             application may not recognize a device if it does not follow the
             conventions for a particular type of device. Refer to the <a href=
@@ -1242,11 +1436,13 @@
       <ol>
         <li>If the input report is a [=blocked report=], abort these steps.
         </li>
-        <li>Let |reportId:octet| be the report ID for this report, or 0 if
-        report IDs are not used.
+        <li>Let |reportId:octet| be the report ID for this report, or 0 if the
+        [=HID interface=] does not [=use report IDs=].
         </li>
-        <li>Let |data:DataView| be the data for this report, excluding the
-        report ID byte if report IDs are used.
+        <li>Let |data:DataView| be a {{DataView}} created over the [=byte
+        sequence=] representing the input report. If the [=HID interface=]
+        [=uses report IDs=], the [=byte sequence=] MUST NOT include the report
+        ID byte.
         </li>
         <li>[=Fire an event=] named {{inputreport}} at |device| using
         {{HIDInputReportEvent}} with its {{HIDInputReportEvent/device}}
@@ -1265,9 +1461,9 @@
         <ol>
           <li>Let |promise:Promise| be [=a new promise=].
           </li>
-          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"closed"`, [=reject=]
-          |promise| with a "{{InvalidStateError}}" {{DOMException}} and abort
-          these steps.
+          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"closed"`, then
+          [=reject=] |promise| with a "{{InvalidStateError}}" {{DOMException}}
+          and return |promise|.
           </li>
           <li>Set [=this=].{{HIDDevice/[[state]]}} to `"opening"`.
           </li>
@@ -1277,8 +1473,8 @@
               </li>
               <li>If this fails for any reason, [=queue a global task=] on the
               [=relevant global object=] of [=this=] using the [=HID device
-              task source=] to [=reject=] |promise| with a
-              "{{NotAllowedError}}" {{DOMException}} and abort these steps.
+              task source=] to [=reject=] |promise| with a "{{NetworkError}}"
+              {{DOMException}} and abort these steps.
               </li>
               <li>Set [=this=].{{HIDDevice/[[state]]}} to `"opened"`.
               </li>
@@ -1304,6 +1500,49 @@
           </li>
           <li>Set [=this=].{{HIDDevice/[[state]]}} to `"closing"`.
           </li>
+          <li>Let |pendingSendReportPromises| be
+          [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}.
+          </li>
+          <li>Set [=this=].{{HIDDevice/[[pendingSendReportPromises]]}} to an
+          empty [=list=].
+          </li>
+          <li>Let |pendingSendFeatureReportPromises| be
+          [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}.
+          </li>
+          <li>Set [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}
+          to an empty [=list=].
+          </li>
+          <li>Let |pendingReceiveFeatureReportPromises| be
+          [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}.
+          </li>
+          <li>Set
+          [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}} to an
+          empty [=list=].
+          </li>
+          <li>Repeat for each |pendingPromise:Promise| of
+          |pendingSendReportPromises|:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with a "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
+          </li>
+          <li>Repeat for each |pendingPromise:Promise| of
+          |pendingSendFeatureReportPromises|:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with a "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
+          </li>
+          <li>Repeat for each |pendingPromise:Promise| of
+          |pendingReceiveFeatureReportPromises|:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with a "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
+          </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
               <li>Invoke the operating system to close the HID device and
@@ -1325,30 +1564,57 @@
         <h3>
           <dfn>sendReport()</dfn> method
         </h3>
+        <div class="note">
+          <p>
+            The {{HIDDevice/sendReport()}} method is used to send an output
+            report with the specified |reportId:octet| and |data:BufferSource|.
+            If the [=HID interface=] does not [=use report IDs=], pass 0
+            instead of the report ID.
+          </p>
+          <p>
+            For [=HID interfaces=] that [=use report IDs=], the report ID value
+            0 is reserved and should not be used.
+          </p>
+        </div>
         <p>
           The {{HIDDevice/sendReport()}} method steps are:
         </p>
         <ol>
           <li>Let |promise:Promise| be [=a new promise=].
           </li>
-          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, [=reject=]
-          |promise| with a "{{InvalidStateError}}" {{DOMException}} and abort
-          these steps.
+          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, then
+          [=reject=] |promise| with a "{{InvalidStateError}}" {{DOMException}}
+          and return |promise|.
+          </li>
+          <li>If |reportId:octet| is 0 and the [=HID interface=] represented by
+          [=this=] [=uses report IDs=], or if |reportId| is not 0 and the
+          interface does not [=use report IDs=], then [=reject=] |promise| with
+          a "{{TypeError}}" {{DOMException}} and return |promise|.
+          </li>
+          <li>Append |promise| to
+          [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}.
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>Invoke the operating system to send an output report with the
-              specified |reportId:octet| and |data:BufferSource|.
+              <li>If |promise| is not in
+              [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}, then abort
+              these steps.
+              </li>
+              <li>Remove |promise| from
+              [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}.
               </li>
               <li>If this report is a [=blocked report=], [=queue a global
               task=] on the [=relevant global object=] of [=this=] using the
               [=HID device task source=] to [=reject=] |promise| with a
               "{{NotAllowedError}}" {{DOMException}} and abort these steps.
               </li>
+              <li>Invoke the operating system to send an output report with the
+              specified |reportId:octet| and |data:BufferSource|.
+              </li>
               <li>If this fails for any reason, [=queue a global task=] on the
               [=relevant global object=] of [=this=] using the [=HID device
-              task source=] to [=reject=] |promise| with a
-              "{{NotAllowedError}}" {{DOMException}} and abort these steps.
+              task source=] to [=reject=] |promise| with a "{{NetworkError}}"
+              {{DOMException}} and abort these steps.
               </li>
               <li>[=Queue a global task=] on the [=relevant global object=] of
               [=this=] using the [=HID device task source=] to [=resolve=]
@@ -1364,30 +1630,57 @@
         <h3>
           <dfn>sendFeatureReport()</dfn> method
         </h3>
+        <div class="note">
+          <p>
+            The {{HIDDevice/sendFeatureReport()}} method is used to send a
+            feature report with the specified |reportId:octet| and |data:BufferSource|.
+            If the [=HID interface=] does not [=use report IDs=], pass 0
+            instead of the report ID.
+          </p>
+          <p>
+            For [=HID interfaces=] that [=use report IDs=], the report ID value
+            0 is reserved and should not be used.
+          </p>
+        </div>
         <p>
           The {{HIDDevice/sendFeatureReport()}} method steps are:
         </p>
         <ol>
           <li>Let |promise:Promise| be [=a new promise=].
           </li>
-          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, [=reject=]
-          |promise| with a "{{InvalidStateError}}" {{DOMException}} and abort
-          these steps.
+          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, then
+          [=reject=] |promise| with a "{{InvalidStateError}}" {{DOMException}}
+          and return |promise|.
+          </li>
+          <li>If |reportId:octet| is 0 and the [=HID interface=] represented by
+          [=this=] [=uses report IDs=], or if |reportId| is not 0 and the
+          interface does not [=use report IDs=], then [=reject=] |promise| with
+          a "{{TypeError}}" {{DOMException}} and return |promise|.
+          </li>
+          <li>Append |promise| to
+          [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}.
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>Invoke the operating system to send a feature report with the
-              specified |reportId:octet| and |data:BufferSource|.
+              <li>If |promise| is not in
+              [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}, then
+              abort these steps.
+              </li>
+              <li>Remove |promise| from
+              [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}.
               </li>
               <li>If this report is a [=blocked report=], [=queue a global
               task=] on the [=relevant global object=] of [=this=] using the
               [=HID device task source=] to [=reject=] |promise| with a
               "{{NotAllowedError}}" {{DOMException}} and abort these steps.
               </li>
+              <li>Invoke the operating system to send a feature report with the
+              specified |reportId:octet| and |data:BufferSource|.
+              </li>
               <li>If this fails for any reason, [=queue a global task=] on the
               [=relevant global object=] of [=this=] using the [=HID device
-              task source=] to [=reject=] |promise| with a
-              "{{NotAllowedError}}" {{DOMException}} and abort these steps.
+              task source=] to [=reject=] |promise| with a "{{NetworkError}}"
+              {{DOMException}} and abort these steps.
               </li>
               <li>[=Queue a global task=] on the [=relevant global object=] of
               [=this=] using the [=HID device task source=] to [=resolve=]
@@ -1403,18 +1696,45 @@
         <h3>
           <dfn>receiveFeatureReport()</dfn> method
         </h3>
+        <div class="note">
+          <p>
+            The {{HIDDevice/receiveFeatureReport()}} method is used to request a
+            feature report with the specified |reportId:octet|.
+            If the [=HID interface=] does not [=use report IDs=], pass 0
+            instead of the report ID.
+          </p>
+          <p>
+            For [=HID interfaces=] that [=use report IDs=], the report ID value
+            0 is reserved and should not be used.
+          </p>
+        </div>
         <p>
           The {{HIDDevice/receiveFeatureReport()}} method steps are:
         </p>
         <ol>
           <li>Let |promise:Promise| be [=a new promise=].
           </li>
-          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, [=reject=]
-          |promise| with a "{{InvalidStateError}}" {{DOMException}} and abort
-          these steps.
+          <li>If [=this=].{{HIDDevice/[[state]]}} is not `"opened"`, then
+          [=reject=] |promise| with a "{{InvalidStateError}}" {{DOMException}}
+          and return |promise|.
+          </li>
+          <li>If |reportId:octet| is 0 and the [=HID interface=] represented by
+          [=this=] [=uses report IDs=], or if |reportId| is not 0 and the
+          interface does not [=use report IDs=], then [=reject=] |promise| with
+          a "{{TypeError}}" {{DOMException}} and return |promise|.
+          </li>
+          <li>Append |promise| to
+          [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}.
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
+              <li>If |promise| is not in
+              [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}},
+              then abort these steps.
+              </li>
+              <li>Remove |promise| from
+              [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}.
+              </li>
               <li>Let |data:DataView| be the result of invoking the operating
               system to read a feature report with the specified
               |reportId:octet|.
@@ -1426,8 +1746,8 @@
               </li>
               <li>If this fails for any reason, [=queue a global task=] on the
               [=relevant global object=] of [=this=] using the [=HID device
-              task source=] to [=reject=] |promise| with a
-              "{{NotAllowedError}}" {{DOMException}} and abort these steps.
+              task source=] to [=reject=] |promise| with a "{{NetworkError}}"
+              {{DOMException}} and abort these steps.
               </li>
               <li>[=Queue a global task=] on the [=relevant global object=] of
               [=this=] using the [=HID device task source=] to [=resolve=]
@@ -1497,23 +1817,23 @@
           <dfn>device</dfn> attribute
         </dt>
         <dd>
-          The {{HIDDevice}} instance that represents the device that sent the
-          input report.
+          The {{HIDDevice}} instance that represents the [=HID interface=] that
+          sent the input report.
         </dd>
         <dt>
           <dfn>reportId</dfn> attribute
         </dt>
         <dd>
-          The one-byte identification prefix for this report, or 0 if the
-          device does not [=use report IDs=].
+          The one-byte identification prefix for this report, or 0 if the [=HID
+          interface=] does not [=use report IDs=].
         </dd>
         <dt>
           <dfn>data</dfn> attribute
         </dt>
         <dd>
           A {{DataView}} containing the data from the input report, excluding
-          the {{HIDInputReportEvent/reportId}} byte if the device [=uses report
-          IDs=].
+          the {{HIDInputReportEvent/reportId}} byte if the [=HID interface=]
+          [=uses report IDs=].
         </dd>
       </dl>
       <section data-dfn-for="HIDInputReportEventInit">
@@ -1566,7 +1886,7 @@
       </pre>
       <p>
         When a device is first connected to the system, the system MUST
-        retrieve the [=Report descriptor=] for each [=HID interface=] exposed
+        retrieve the [=report descriptor=] for each [=HID interface=] exposed
         by the device. The <dfn>Report descriptor</dfn> is a [=byte sequence=]
         that can be expanded into a hierarchical data structure describing the
         layout of each report supported by the device. The elements of this
@@ -1575,7 +1895,7 @@
       </p>
       <p>
         A {{HIDCollectionInfo}} object represents a single collection within
-        the [=Report descriptor=]. When a collection contains nested
+        the [=report descriptor=]. When a collection contains nested
         collections, the nested collections are included as elements of
         {{HIDCollectionInfo/children}}.
       </p>
@@ -1597,16 +1917,16 @@
         </dt>
         <dd>
           <p>
-            The [=Usage Page=] component of the [=HID Usage=] associated with
+            The [=Usage Page=] component of the [=HID usage=] associated with
             this collection.
           </p>
           <p>
-            <dfn>HID Usages</dfn> are constants that can be interpreted by an
+            <dfn>HID usages</dfn> are constants that can be interpreted by an
             application to identify the purpose and meaning of an item or
-            collection. A [=HID Usage=] is an `unsigned long` value composed of
+            collection. A [=HID usage=] is an `unsigned long` value composed of
             an `unsigned short` <dfn>Usage Page</dfn> in the high order bits
             and an `unsigned short` <dfn>Usage ID</dfn> in the low order bits.
-            Standard [=HID Usage=] values are described in the <a href=
+            Standard [=HID usage=] values are described in the <a href=
             "https://usb.org/document-library/hid-usage-tables-122">HID Usage
             Tables</a> document and other documents published by the <a href=
             "https://www.usb.org/hid">USB Implementers Forum</a>.
@@ -1621,11 +1941,11 @@
         </dt>
         <dd>
           <p>
-            The [=Usage ID=] component of the [=HID Usage=] associated with
+            The [=Usage ID=] component of the [=HID usage=] associated with
             this collection.
           </p>
           <p>
-            A [=Usage ID=] is used to select an individual [=HID Usage=] on a
+            A [=Usage ID=] is used to select an individual [=HID usage=] on a
             [=Usage Page=]. By convention, [=Usage IDs=] 0x01 through 0x1F are
             reserved for [=top-level collections=].
           </p>
@@ -1773,17 +2093,17 @@
       </pre>
       <p>
         A {{HIDReportInfo}} represents one input, output, or feature report
-        within the [=Report descriptor=].
+        within the [=report descriptor=].
       </p>
       <dl>
         <dt>
           <dfn>reportId</dfn> member
         </dt>
         <dd>
-          A device <dfn data-lt="use report IDs">uses report IDs</dfn> if it
-          prepends a one-byte identification prefix to each report transfer.
-          The {{HIDReportInfo/reportId}} member is the prefix for this report
-          if the device [=uses report IDs=], or 0 otherwise.
+          A [=HID interface=] <dfn data-lt="use report IDs">uses report
+          IDs</dfn> if it prepends a one-byte identification prefix to each
+          report transfer. The {{HIDReportInfo/reportId}} member is the prefix
+          for this report if the interface [=uses report IDs=], or 0 otherwise.
         </dd>
         <dt>
           <dfn>items</dfn> member
@@ -1875,9 +2195,9 @@
           <dfn>isRange</dfn> member
         </dt>
         <dd>
-          `true` if the item assigns usages from a [=HID Usage=] range defined
+          `true` if the item assigns usages from a [=HID usage=] range defined
           by {{HIDReportItem/usageMinimum}} and {{HIDReportItem/usageMaximum}},
-          or `false` if the item has a sequence of [=HID Usage=] values in
+          or `false` if the item has a sequence of [=HID usage=] values in
           {{HIDReportItem/usages}}.
         </dd>
         <dt>
@@ -1923,12 +2243,12 @@
         <dd>
           <p>
             If {{HIDReportItem/isRange}} is `true` or this item has no
-            associated [=HID Usage=] values, then {{HIDReportItem/usages}} MUST
+            associated [=HID usage=] values, then {{HIDReportItem/usages}} MUST
             be an empty sequence.
           </p>
           <p>
             If {{HIDReportItem/isRange}} is `false` then
-            {{HIDReportItem/usages}} contains the sequence of [=HID Usage=]
+            {{HIDReportItem/usages}} contains the sequence of [=HID usage=]
             values associated with this item.
           </p>
         </dd>
@@ -1938,7 +2258,7 @@
         <dd>
           <p>
             If {{HIDReportItem/isRange}} is `true` then
-            {{HIDReportItem/usageMinimum}} contains the minimum [=HID Usage=]
+            {{HIDReportItem/usageMinimum}} contains the minimum [=HID usage=]
             value in the usage range associated with this item.
           </p>
           <p>
@@ -1952,7 +2272,7 @@
         <dd>
           <p>
             If {{HIDReportItem/isRange}} is `true` then
-            {{HIDReportItem/usageMaximum}} contains the maximum [=HID Usage=]
+            {{HIDReportItem/usageMaximum}} contains the maximum [=HID usage=]
             value in the usage range associated with this item.
           </p>
           <p>
@@ -1986,7 +2306,7 @@
         </dt>
         <dd>
           A {{HIDUnitSystem}} enum value specifying the unit system for the
-          unit definition, or {{HIDUnitSystem/`"none"`}} if the item has no
+          unit definition, or {{HIDUnitSystem/"none"}} if the item has no
           unit definition.
         </dd>
         <dt>
@@ -2221,6 +2541,9 @@
             console.log(`Input report ${reportId} from ${device.productName}:`,
                         new Uint8Array(data.buffer));
           };
+
+          if (!device.opened)
+            await device.open();
         </pre>
       </aside>
       <aside class="example">
@@ -2229,6 +2552,9 @@
         </p>
         <pre class="js">
           try {
+            if (!device.opened)
+              await device.open();
+
             const outputReportData = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
             await device.sendReport(0x05, outputReportData);
             console.log("Output report sent");
@@ -2243,6 +2569,9 @@
         </p>
         <pre class="js">
           try {
+            if (!device.opened)
+              await device.open();
+
             const oldFeatureData = await device.receiveFeatureReport(0x80);
             console.log("Feature report received:", new Uint8Array(oldFeatureData.buffer));
 
@@ -2295,7 +2624,7 @@
       </p>
       <ol>
         <li>Let |reportId:octet| be the report ID of the report, or 0 if the
-        device does not use report IDs.
+        [=HID interface=] does not [=use report IDs=].
         </li>
         <li>Let |reportType| be `"input"` if the report is an input report,
         `"output"` if the report is an output report, or `"feature"` if the
@@ -2304,23 +2633,23 @@
         <li>Let |collection:HIDCollectionInfo| be the [=top-level collection=]
         that contains the report.
         </li>
-        <li>If |rule| contains `vendor` and |rule|.`vendor` is not
+        <li>If |rule| contains `"vendor"` and |rule|[`"vendor"`] is not
         |device|.{{HIDDevice/vendorId}}, return `false`.
         </li>
-        <li>If |rule| contains `product` and |rule|.`product` is not
+        <li>If |rule| contains `"product"` and |rule|[`"product"`] is not
         |device|.{{HIDDevice/productId}}, return `false`.
         </li>
-        <li>If |rule| contains `reportId` and |rule|.`reportId` is not
+        <li>If |rule| contains `"reportId"` and |rule|[`"reportId"`] is not
         |reportId|, return `false`.
         </li>
-        <li>If |rule| contains `reportType` and |rule|.`reportType` is not
+        <li>If |rule| contains `"reportType"` and |rule|[`"reportType"`] is not
         |reportType|, return `false`.
         </li>
-        <li>If |rule| contains `usagePage` and |rule|.`usagePage` is not
-        |collection|.{{HIDCollectionInfo/usagePage}}, return `false`.
+        <li>If |rule| contains `"usagePage"` and |rule|[`"usagePage"`] is not
+        |collection|["{{HIDCollectionInfo/usagePage}}"], return `false`.
         </li>
-        <li>If |rule| contains `usage` and |rule|.`usage` is not
-        |collection|.{{HIDCollectionInfo/usage}}, return `false`.
+        <li>If |rule| contains `"usage"` and |rule|.[`"usage"`] is not
+        |collection|["{{HIDCollectionInfo/usage}}"], return `false`.
         </li>
         <li>Return `true`.
         </li>
