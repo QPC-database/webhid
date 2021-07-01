@@ -17,6 +17,30 @@
         github: "WICG/webhid",
         group: "wicg",
         xref: ["DOM", "HTML", "INFRA", "PERMISSIONS-POLICY", "POINTEREVENTS", "UIEVENTS", "GAMEPAD"],
+        localBiblio: {
+          "USBIF-HID-CLASS": {
+            "authors": [
+                "Mike Bergman"
+            ],
+            "etAl": true,
+            "href": "https://www.usb.org/document-library/device-class-definition-hid-111",
+            "title": "Device Class Definition for Human Interface Devices (HID) version 1.11",
+            "date": "May 27, 2001",
+            "status": "Specification",
+            "publisher": "USB Implementers Forum",
+          },
+          "USBIF-HID-USAGE": {
+            "authors": [
+                "David Abzarian"
+            ],
+            "etAl": true,
+            "href": "https://www.usb.org/document-library/hid-usage-tables-122",
+            "title": "HID Usage Tables for Universal Serial Bus (USB) version 1.22",
+            "date": "April 6, 2021",
+            "status": "Specification",
+            "publisher": "USB Implementers Forum",
+          },
+        },
       };
     </script>
   </head>
@@ -315,10 +339,6 @@
         </p>
       </div>
       <ol>
-        <li>Let |hid:HID| be the {{HID}} instance that is returned by
-        [=this=]'s [=relevant global object=]'s {{Navigator}} object's
-        {{Navigator/hid}} getter.
-        </li>
         <li>Let |device:HIDDevice| be a {{HIDDevice}}.
         </li>
         <li>Set |device|.{{HIDDevice/[[vendorId]]}} to the [=vendor ID=] of the
@@ -333,7 +353,10 @@
         <li>Set |device|.{{HIDDevice/[[collections]]}} to the result of
         [=parsing the Report descriptor=].
         </li>
-        <li>Append |device| to |hid|.{{HID/[[devices]]}}.
+        <li>Let |hid:HID| be the result of running [=get the parent=] for
+        |device|.
+        </li>
+        <li>[=list/Append=] |device| to |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
         of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
@@ -357,11 +380,9 @@
             parsing the [=report descriptor=].
           </p>
           <p>
-            The [=report descriptor=] format is described in <a href=
-            "https://www.usb.org/document-library/device-class-definition-hid-111">
-            Device Class Definition for HID 1.11</a> section 6.2.2. The
-            algorithm below is intended to implement the same parsing algorithm
-            described in that section.
+            The [=report descriptor=] format is described in
+            [[USBIF-HID-CLASS]] section 6.2.2. The algorithm below is intended
+            to implement the same parsing algorithm described in that section.
           </p>
           <p>
             The [=report descriptor=] contains three classes of items.
@@ -384,13 +405,13 @@
         and [=Local items=].
         </li>
         <li>Initialize |collections:sequence&lt;HIDCollectionInfo&gt;| to be an
-        empty sequence of {{HIDCollectionInfo}}.
+        empty [=sequence=] of {{HIDCollectionInfo}}.
         </li>
-        <li>Initialize |ancestors| to be an empty [=stack=].
+        <li>Initialize |ancestors| to be an empty [=list=].
         </li>
         <li>Initialize |localState| to be an empty [=ordered map=].
         </li>
-        <li>Initialize |usages| to be an empty sequence of `unsigned long`.
+        <li>Initialize |usages| to be an empty [=sequence=] of `unsigned long`.
         </li>
         <li>Initialize |stringIndices| to be an empty [=list=].
         </li>
@@ -435,26 +456,24 @@
         </li>
         <li>Set |initialGlobalState|["{{HIDReportItem/physicalMaximum}}"] to 0.
         </li>
-        <li>Push |initialGlobalState| onto |globalStack|.
+        <li>[=stack/Push=] |initialGlobalState| onto |globalStack|.
         </li>
-        <li>Repeat for each |item| of |items|:
+        <li>[=list/For each=] |item| of |items|:
           <div class="note">
             <p>
-              [=Main items=] are described in the <a href=
-              "https://www.usb.org/document-library/device-class-definition-hid-111">
-              Device Class Definition for HID 1.11</a> sections 6.2.2.4 through
-              6.2.2.6. An item with the <dfn>Input tag</dfn>, <dfn>Output
-              tag</dfn>, or <dfn>Feature tag</dfn> defines a field within an
-              input, output, or feature report. The [=item data field=] of a
-              [=Main item=] with an [=Input tag=], [=Output tag=], or [=Feature
-              tag=] is a bit field containing several boolean parameters
-              describing the data field. An item with the <dfn>Collection
-              tag</dfn> defines a new collection nested within the current
-              collection, or a new [=top-level collection=] if there is no
-              current collection. The [=item data field=] of a [=Main item=]
-              with a [=Collection tag=] contains the <dfn>collection
-              type</dfn>. An item with the <dfn>End Collection tag</dfn> closes
-              the current collection.
+              [=Main items=] are described in [[USBIF-HID-CLASS]] sections
+              6.2.2.4 through 6.2.2.6. An item with the <dfn>Input tag</dfn>,
+              <dfn>Output tag</dfn>, or <dfn>Feature tag</dfn> defines a field
+              within an input, output, or feature report. The [=item data
+              field=] of a [=Main item=] with an [=Input tag=], [=Output tag=],
+              or [=Feature tag=] is a bit field containing several boolean
+              parameters describing the data field. An item with the
+              <dfn>Collection tag</dfn> defines a new collection nested within
+              the current collection, or a new [=top-level collection=] if
+              there is no current collection. The [=item data field=] of a
+              [=Main item=] with a [=Collection tag=] contains the
+              <dfn>collection type</dfn>. An item with the <dfn>End Collection
+              tag</dfn> closes the current collection.
             </p>
           </div>
           <ol>
@@ -463,7 +482,8 @@
                 <li>If |item| has the [=Input tag=], [=Output tag=], or
                 [=Feature tag=]:
                   <ol>
-                    <li>Let |globalState| be the last item of |globalStack|.
+                    <li>Let |globalState| be the last [=list/item=] of
+                    |globalStack|.
                     </li>
                     <li>Let |reportId:octet| be
                     |globalState|["{{HIDReportInfo/reportId}}"].
@@ -472,7 +492,7 @@
                     [=creating a HID report item=] with |item|, |localState|,
                     |globalState|, |usages|, and |strings|.
                     </li>
-                    <li>Repeat for each |collection:HIDCollectionInfo| of
+                    <li>[=list/For each=] |collection:HIDCollectionInfo| of
                     |ancestors|:
                       <ol>
                         <li>Let |reports:sequence&lt;HIDCollectionInfo&gt;| be:
@@ -508,7 +528,7 @@
                             |reportId|.
                             </li>
                             <li>Set |report|["{{HIDReportInfo/items}}"] to an
-                            empty sequence of {{HIDReportItem}}.
+                            empty [=sequence=] of {{HIDReportItem}}.
                             </li>
                             <li>Append |report| to |reports|.
                             </li>
@@ -541,45 +561,46 @@
                     value representing the collection's type.
                     </li>
                     <li>Set |collection|["{{HIDCollectionInfo/children}}"] to
-                    an empty sequence of {{HIDCollectionInfo}}.
+                    an empty [=sequence=] of {{HIDCollectionInfo}}.
                     </li>
                     <li>Set |collection|["{{HIDCollectionInfo/inputReports}}"]
-                    to an empty sequence of {{HIDReportInfo}}.
+                    to an empty [=sequence=] of {{HIDReportInfo}}.
                     </li>
                     <li>Set |collection|["{{HIDCollectionInfo/outputReports}}"]
-                    to an empty sequence of {{HIDReportInfo}}.
+                    to an empty [=sequence=] of {{HIDReportInfo}}.
                     </li>
                     <li>Set
                     |collection|["{{HIDCollectionInfo/featureReports}}"] to an
-                    empty sequence of {{HIDReportInfo}}.
+                    empty [=sequence=] of {{HIDReportInfo}}.
                     </li>
                     <li>
                       <p>
-                        If |ancestors| is empty, append |collection| to
-                        |collections|.
+                        If |ancestors| [=list/is empty=], append |collection|
+                        to |collections|.
                       </p>
                       <p>
                         Otherwise:
                       </p>
                       <ol>
-                        <li>Let |parent:HIDCollectionInfo| be the last item of
-                        |ancestors|.
+                        <li>Let |parent:HIDCollectionInfo| be the last
+                        [=list/item=] of |ancestors|.
                         </li>
                         <li>Append |collection| to
                         |parent|["{{HIDCollectionInfo/children}}"].
                         </li>
                       </ol>
                     </li>
-                    <li>Push |collection| onto |ancestors|.
+                    <li>[=list/Append=] |collection| to |ancestors|.
                     </li>
                   </ol>
                 </li>
-                <li>If |item| has the [=End Collection tag=], then pop from
-                |ancestors|.
+                <li>If |item| has the [=End Collection tag=], then
+                [=list/remove=] the last [=list/item=] of |ancestors|.
                 </li>
                 <li>Set |localState| to be an empty [=ordered map=].
                 </li>
-                <li>Set |usages| to be an empty sequence of `unsigned long`.
+                <li>Set |usages| to be an empty [=sequence=] of `unsigned
+                long`.
                   <div class="note">
                     <p>
                       [=Global items=] are described in section 6.2.2.7. An
@@ -601,7 +622,8 @@
                 </li>
                 <li>If |item| is a [=Global item=]:
                   <ol>
-                    <li>Let |globalState| be the last item of |globalStack|.
+                    <li>Let |globalState| be the last [=list/item=] of
+                    |globalStack|.
                     </li>
                     <li>Let |value:unsigned long| be the [=item data field=]
                     interpreted as an `unsigned long`.
@@ -638,8 +660,8 @@
                     <li>If |item| has the [=Unit tag=]:
                       <ol>
                         <li>Let |nibbles| be the result of interpreting |value|
-                        as a sequence of eight 4-bit signed two's complement
-                        integers starting from the low-order bits.
+                        as a [=sequence=] of eight 4-bit signed two's
+                        complement integers starting from the low-order bits.
                         </li>
                         <li>If |nibbles|[0] is:
                           <ul>
@@ -704,10 +726,10 @@
                     result of interpreting the lowest 4 bits of the [=item data
                     field=] as a signed two's complement integer.
                     </li>
-                    <li>If |item| has the [=Push tag=], then push a copy of
-                    |globalState| onto |globalStack|.
+                    <li>If |item| has the [=Push tag=], then [=stack/push=] a
+                    copy of |globalState| onto |globalStack|.
                     </li>
-                    <li>If |item| has the [=Pop tag=], then pop from
+                    <li>If |item| has the [=Pop tag=], then [=stack/pop=] from
                     |globalStack|.
                     </li>
                   </ol>
@@ -737,7 +759,7 @@
                         <li>Let |usageId:unsigned short| be an `unsigned short`
                         containing the lower 16 bits of |value|.
                         </li>
-                        <li>Let |globalState| be the last item of
+                        <li>Let |globalState| be the last [=list/item=] of
                         |globalStack|.
                         </li>
                         <li>Set |value| to a [=HID usage=] composed of
@@ -756,8 +778,8 @@
                 <li>If |item| has the [=Usage Maximum tag=], then set
                 |localState|["{{HIDReportItem/usageMaximum}}"] to |value|.
                 </li>
-                <li>If |item| has the [=String Index tag=], then append |value|
-                to |stringIndices|.
+                <li>If |item| has the [=String Index tag=], then
+                [=list/append=] |value| to |stringIndices|.
                 </li>
                 <li>If |item| has the [=String Minimum tag=], then set
                 |localState|[`"stringMinimum"`] to |value|.
@@ -857,18 +879,12 @@
             |reportItem|["{{HIDReportItem/usageMinimum}}"] to
             |localState|["{{HIDReportItem/usageMinimum}}"].
           </p>
-          <p>
-            Otherwise, set |reportItem|["{{HIDReportItem/usageMinimum}}"] to 0.
-          </p>
         </li>
         <li>
           <p>
             If "{{HIDReportItem/usageMaximum}}" is in |localState|, then set
             |reportItem|["{{HIDReportItem/usageMaximum}}"] to
             |localState|["{{HIDReportItem/usageMaximum}}"].
-          </p>
-          <p>
-            Otherwise, set |reportItem|["{{HIDReportItem/usageMinimum}}"] to 0.
           </p>
         </li>
         <li>Set |reportItem|["{{HIDReportItem/isRange}}"] to `true` if
@@ -878,20 +894,13 @@
         <li>If `"stringMinimum"` is in |localState| and `"stringMaximum"` is in
         |localState|:
           <ol>
-            <li>Initialize |stringIndex| to be |localState|[`"stringMinimum"`].
-            </li>
-            <li>Repeat while |stringIndex| is less than or equal to
-            |localState|[`"stringMaximum"`]:
-              <ol>
-                <li>Append |stringIndex| to |stringIndices|.
-                </li>
-                <li>Increment |stringIndex|.
-                </li>
-              </ol>
+            <li>[=list/Append=] the [=list/item=]s of [=the range=] from
+            |localState|[`"stringMinimum"`] to |localState|[`"stringMaximum"`]
+            to |stringIndices|.
             </li>
           </ol>
         </li>
-        <li>Repeat for each |stringIndex| of |stringIndices|:
+        <li>[=list/For each=] |stringIndex| of |stringIndices|:
           <ol>
             <li>Let |string| be the result of reading the string descriptor at
             index |stringIndex|.
@@ -908,14 +917,13 @@
         following steps:
       </p>
       <ol>
-        <li>Let |hid:HID| be the {{HID}} instance that is returned by
-        [=this=]'s [=relevant global object=]'s {{Navigator}} object's
-        {{Navigator/hid}} getter.
-        </li>
         <li>Let |device:HIDDevice| be the {{HIDDevice}} in
         |hid|.{{HID/[[devices]]}} representing the interface.
         </li>
-        <li>Remove |device| from |hid|.{{HID/[[devices]]}}.
+        <li>Let |hid:HID| be the result of running [=get the parent=] for
+        |device|.
+        </li>
+        <li>[=list/Remove=] |device| from |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
         of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
@@ -940,15 +948,11 @@
           </li>
           <li>Run the following steps [=in parallel=]:
             <ol>
-              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty sequence
-              of {{HIDDevice}}.
+              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty
+              [=sequence=] of {{HIDDevice}}.
               </li>
-              <li>Let |hid:HID| be the {{HID}} instance that is returned by
-              [=this=]'s [=relevant global object=]'s {{Navigator}} object's
-              {{Navigator/hid}} getter.
-              </li>
-              <li>Repeat for each |device:HIDDevice| in
-              |hid|.{{HID/[[devices]]}}:
+              <li>[=list/For each=] |device:HIDDevice| of
+              [=this=].{{HID/[[devices]]}}:
                 <ol>
                   <li>If the user has allowed the site to access |device| as
                   the result of a previous call to {{HID/requestDevice()}},
@@ -999,9 +1003,13 @@
           "{{SecurityError}}" {{DOMException}} and return |promise|.
           </li>
           <li>If |options|["{{HIDDeviceRequestOptions/filters}}"] is present,
-          then run the following steps for each |filter:HIDDeviceFilter| in
+          then run the following steps for each
+          |filter:HIDDeviceFilter| of
           |options|["{{HIDDeviceRequestOptions/filters}}"]:
             <ol>
+              <li>If |filter| is empty, then [=reject=] |promise| with
+              a {{TypeError}} and return |promise|.
+              </li>
               <li>If |filter|["{{HIDDeviceFilter/productId}}"] is present and
               |filter|["{{HIDDeviceFilter/vendorId}}"] is not present,
               [=reject=] |promise| with a {{TypeError}} and return |promise|.
@@ -1016,12 +1024,8 @@
             <ol>
               <li>Initialize |availableDevices| to be an empty [=list=].
               </li>
-              <li>Let |hid:HID| be the {{HID}} instance that is returned by
-              [=this=]'s [=relevant global object=]'s {{Navigator}} object's
-              {{Navigator/hid}} getter.
-              </li>
-              <li>Repeat for each |device:HIDDevice| in
-              |hid|.{{HID/[[devices]]}}:
+              <li>[=list/For each=] |device:HIDDevice| of
+              [=this=].{{HID/[[devices]]}}:
                 <ol>
                   <li>If |device| [=matches any filter=] in
                   |options|["{{HIDDeviceRequestOptions/filters}}"], then append
@@ -1035,12 +1039,12 @@
               <li>If the user does not choose a device, [=queue a global task=]
               on the [=relevant global object=] of [=this=] using the [=HID
               device task source=] to [=resolve=] |promise| with an empty
-              sequence of {{HIDDevice}} and abort these steps.
+              [=sequence=] of {{HIDDevice}} and abort these steps.
               </li>
-              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty sequence
-              of {{HIDDevice}}.
+              <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty
+              [=sequence=] of {{HIDDevice}}.
               </li>
-              <li>Repeat for each |device:HIDDevice| of
+              <li>[=list/For each=] |device:HIDDevice| of
               |hid|.{{HID/[[devices]]}}:
                 <ol>
                   <li>If |device| represents a [=HID interface=] exposed by the
@@ -1163,13 +1167,13 @@
           </div>
           <p>
             A {{HIDDevice}} |device:HIDDevice| <dfn>matches any filter</dfn> in
-            a sequence |filters:sequence&lt;HIDDeviceFilter&gt;| of
+            a [=sequence=] |filters:sequence&lt;HIDDeviceFilter&gt;| of
             {{HIDDeviceFilter}} if these steps return `true`:
           </p>
           <ol>
             <li>If |filters| is empty, then return `true`.
             </li>
-            <li>Repeat for each |filter:HIDDeviceFilter| of |filters|:
+            <li>For each |filter:HIDDeviceFilter| of |filters|:
               <ol>
                 <li>If |filter| [=matches the device IDs=] of |device| and
                 |filter| [=matches any collection=] of |device|, then return
@@ -1206,7 +1210,7 @@
             `true`:
           </p>
           <ol>
-            <li>Repeat for each |collection:HIDCollectionInfo| of
+            <li>For each |collection:HIDCollectionInfo| of
             |device|.{{HIDDevice/collections}}:
               <ol>
                 <li>If |filter| [=matches the collection=] |collection| then
@@ -1276,7 +1280,7 @@
         Instances of {{HIDDevice}} are created with the internal slots
         described in the following table:
       </p>
-      <table class="simple">
+      <table class="simple" dfn-for="HIDDevice">
         <tr>
           <th>
             Internal slot
@@ -1290,7 +1294,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\state]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\state]]</dfn>
           </td>
           <td>
             `"closed"`
@@ -1301,7 +1305,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\vendorId]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\vendorId]]</dfn>
           </td>
           <td>
             0
@@ -1312,7 +1316,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\productId]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\productId]]</dfn>
           </td>
           <td>
             0
@@ -1323,7 +1327,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\productName]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\productName]]</dfn>
           </td>
           <td>
             `""`
@@ -1334,10 +1338,10 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\collections]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\collections]]</dfn>
           </td>
           <td>
-            An empty sequence of {{HIDCollectionInfo}}
+            An empty [=sequence=] of {{HIDCollectionInfo}}
           </td>
           <td>
             The [=top-level collections=] created by [=parsing the report
@@ -1346,7 +1350,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\pendingOpenPromise]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\pendingOpenPromise]]</dfn>
           </td>
           <td>
             `null`
@@ -1357,7 +1361,7 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\pendingSendReportPromises]]</dfn>
+            <dfn data-dfn-for="HIDDevice">[[\pendingSendReportPromises]]</dfn>
           </td>
           <td>
             An empty [=list=]
@@ -1368,7 +1372,8 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\pendingSendFeatureReportPromises]]</dfn>
+            <dfn data-dfn-for=
+            "HIDDevice">[[\pendingSendFeatureReportPromises]]</dfn>
           </td>
           <td>
             An empty [=list=]
@@ -1379,7 +1384,8 @@
         </tr>
         <tr>
           <td>
-            <dfn>[[\pendingReceiveFeatureReportPromises]]</dfn>
+            <dfn data-dfn-for=
+            "HIDDevice">[[\pendingReceiveFeatureReportPromises]]</dfn>
           </td>
           <td>
             An empty [=list=]
@@ -1491,8 +1497,8 @@
         </dt>
         <dd>
           <p>
-            A sequence of {{HIDCollectionInfo}} representing the [=top-level
-            collections=] in the [=report descriptor=].
+            A [=sequence=] of {{HIDCollectionInfo}} representing the
+            [=top-level collections=] in the [=report descriptor=].
           </p>
           <p>
             The {{HIDDevice/collections}} getter steps are:
@@ -1506,9 +1512,8 @@
             purposes within the device. Applications look at the [=HID usage=]
             applied to [=top-level collections=] to identify devices. An
             application may not recognize a device if it does not follow the
-            conventions for a particular type of device. Refer to the <a href=
-            "https://usb.org/document-library/hid-usage-tables-122">HID Usage
-            Tables</a> document for more information about the conventional
+            conventions for a particular type of device. Refer to
+            [[USBIF-HID-USAGE]] for more information about the conventional
             behavior for standard HID devices.
           </div>
         </dd>
@@ -1555,9 +1560,6 @@
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>If [=this=].{{HIDDevice/[[pendingOpenPromise]]}} is not
-              |promise|, abort these steps.
-              </li>
               <li>Invoke the operating system to open the HID device.
               </li>
               <li>If this fails for any reason, [=queue a global task=] on the
@@ -1589,56 +1591,44 @@
           </li>
           <li>Set [=this=].{{HIDDevice/[[state]]}} to `"closing"`.
           </li>
-          <li>Let |pendingOpenPromise| be
-          [=this=].{{HIDDevice/[[pendingOpenPromise]]}}.
+          <li>If [=this=].{{HIDDevice/[[pendingOpenPromise]]}} is not `null`,
+          [=reject=] [=this=].{{HIDDevice/[[pendingOpenPromise]]}} with an
+          "{{AbortError}}" {{DOMException}}.
           </li>
           <li>Set [=this=].{{HIDDevice/[[pendingOpenPromise]]}} to `null`.
           </li>
-          <li>Let |pendingSendReportPromises| be
+          <li>[=list/For each=] |pendingPromise:Promise| of
+          [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
+          </li>
+          <li>[=list/Empty=]
           [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}.
           </li>
-          <li>Set [=this=].{{HIDDevice/[[pendingSendReportPromises]]}} to an
-          empty [=list=].
+          <li>[=list/For each=] |pendingPromise:Promise| of
+          [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
           </li>
-          <li>Let |pendingSendFeatureReportPromises| be
+          <li>[=list/Empty=]
           [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}.
           </li>
-          <li>Set [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}
-          to an empty [=list=].
+          <li>[=list/For each=] |pendingPromise:Promise| of
+          [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}:
+            <ol>
+              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
+              {{DOMException}}.
+              </li>
+            </ol>
           </li>
-          <li>Let |pendingReceiveFeatureReportPromises| be
+          <li>[=list/Empty=]
           [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}.
-          </li>
-          <li>Set
-          [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}} to an
-          empty [=list=].
-          </li>
-          <li>If |pendingOpenPromise| is not `null`, [=reject=]
-          |pendingOpenPromise| with an "{{AbortError}}" {{DOMException}}.
-          </li>
-          <li>Repeat for each |pendingPromise:Promise| of
-          |pendingSendReportPromises|:
-            <ol>
-              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
-              {{DOMException}}.
-              </li>
-            </ol>
-          </li>
-          <li>Repeat for each |pendingPromise:Promise| of
-          |pendingSendFeatureReportPromises|:
-            <ol>
-              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
-              {{DOMException}}.
-              </li>
-            </ol>
-          </li>
-          <li>Repeat for each |pendingPromise:Promise| of
-          |pendingReceiveFeatureReportPromises|:
-            <ol>
-              <li>[=Reject=] |pendingPromise| with an "{{AbortError}}"
-              {{DOMException}}.
-              </li>
-            </ol>
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
@@ -1693,13 +1683,6 @@
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>If |promise| is not in
-              [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}, then abort
-              these steps.
-              </li>
-              <li>Remove |promise| from
-              [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}.
-              </li>
               <li>If this report is a [=blocked report=], [=queue a global
               task=] on the [=relevant global object=] of [=this=] using the
               [=HID device task source=] to [=reject=] |promise| with a
@@ -1759,13 +1742,6 @@
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>If |promise| is not in
-              [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}, then
-              abort these steps.
-              </li>
-              <li>Remove |promise| from
-              [=this=].{{HIDDevice/[[pendingSendFeatureReportPromises]]}}.
-              </li>
               <li>If this report is a [=blocked report=], [=queue a global
               task=] on the [=relevant global object=] of [=this=] using the
               [=HID device task source=] to [=reject=] |promise| with a
@@ -1825,26 +1801,27 @@
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
-              <li>If |promise| is not in
-              [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}},
-              then abort these steps.
-              </li>
-              <li>Remove |promise| from
-              [=this=].{{HIDDevice/[[pendingReceiveFeatureReportPromises]]}}.
-              </li>
-              <li>Let |data:DataView| be the result of invoking the operating
-              system to read a feature report with the specified
-              |reportId:octet|.
-              </li>
               <li>If this report is a [=blocked report=], [=queue a global
               task=] on the [=relevant global object=] of [=this=] using the
               [=HID device task source=] to [=reject=] |promise| with a
               "{{NotAllowedError}}" {{DOMException}} and abort these steps.
               </li>
-              <li>If this fails for any reason, [=queue a global task=] on the
-              [=relevant global object=] of [=this=] using the [=HID device
-              task source=] to [=reject=] |promise| with a "{{NetworkError}}"
-              {{DOMException}} and abort these steps.
+              <li>Let |data:DataView| be a {{DataView}} created over the [=byte
+              sequence=] representing the result of invoking the operating
+              system to read a feature report with the specified
+              |reportId:octet|.
+                <div class="note">
+                  |data| will contain whatever report data was received from
+                  the operating system. If the device [=uses report IDs=] this
+                  may include the report ID. The report ID byte is included
+                  because the device may respond with other data in place of
+                  the report ID.
+                </div>
+              </li>
+              <li>If reading the feature report fails for any reason, [=queue a
+              global task=] on the [=relevant global object=] of [=this=] using
+              the [=HID device task source=] to [=reject=] |promise| with a
+              "{{NetworkError}}" {{DOMException}} and abort these steps.
               </li>
               <li>[=Queue a global task=] on the [=relevant global object=] of
               [=this=] using the [=HID device task source=] to [=resolve=]
@@ -1999,8 +1976,8 @@
       <p>
         The {{HIDCollectionInfo/inputReports}},
         {{HIDCollectionInfo/outputReports}}, and
-        {{HIDCollectionInfo/featureReports}} attributes contain sequences of
-        {{HIDReportInfo}} that give information about each report described
+        {{HIDCollectionInfo/featureReports}} attributes contain [=sequences=]
+        of {{HIDReportInfo}} that give information about each report described
         within this collection. For a [=top-level collection=], the
         {{HIDReportInfo}} represents a flattened view of all items that compose
         the report. The flattened view interleaves items contained in nested
@@ -2023,9 +2000,8 @@
             collection. A [=HID usage=] is an `unsigned long` value composed of
             an `unsigned short` <dfn>usage page</dfn> in the high order bits
             and an `unsigned short` <dfn>usage ID</dfn> in the low order bits.
-            Standard [=HID usage=] values are described in the <a href=
-            "https://usb.org/document-library/hid-usage-tables-122">HID Usage
-            Tables</a> document and other documents published by the <a href=
+            Standard [=HID usage=] values are described in [[USBIF-HID-CLASS]]
+            and other documents published by the <a href=
             "https://www.usb.org/hid">USB Implementers Forum</a>.
           </p>
           <p>
@@ -2142,38 +2118,36 @@
           </table>
           <p>
             Each [=collection type=] describes a different type of relationship
-            among the grouped items. Refer to the <a href=
-            "https://www.usb.org/document-library/device-class-definition-hid-111">
-            Device Class Definition for HID 1.11</a> section 6.2.2.6 for more
-            information about [=collection types=].
+            among the grouped items. Refer to [[USBIF-HID-CLASS]] section
+            6.2.2.6 for more information about [=collection types=].
           </p>
         </dd>
         <dt>
           <dfn>children</dfn> member
         </dt>
         <dd>
-          A sequence of {{HIDCollectionInfo}} representing the collections
+          A [=sequence=] of {{HIDCollectionInfo}} representing the collections
           nested within this collection.
         </dd>
         <dt>
           <dfn>inputReports</dfn> member
         </dt>
         <dd>
-          A sequence of {{HIDReportInfo}} representing the input reports
+          A [=sequence=] of {{HIDReportInfo}} representing the input reports
           described within this collection.
         </dd>
         <dt>
           <dfn>outputReports</dfn> member
         </dt>
         <dd>
-          A sequence of {{HIDReportInfo}} representing the output reports
+          A [=sequence=] of {{HIDReportInfo}} representing the output reports
           described within this collection.
         </dd>
         <dt>
           <dfn>featureReports</dfn> member
         </dt>
         <dd>
-          A sequence of {{HIDReportInfo}} representing the feature reports
+          A [=sequence=] of {{HIDReportInfo}} representing the feature reports
           described within this collection.
         </dd>
       </dl>
@@ -2206,7 +2180,7 @@
           <dfn>items</dfn> member
         </dt>
         <dd>
-          A sequence of {{HIDReportItem}} representing the fields of this
+          A [=sequence=] of {{HIDReportItem}} representing the fields of this
           report.
         </dd>
       </dl>
@@ -2294,7 +2268,7 @@
         <dd>
           `true` if the item assigns usages from a [=HID usage=] range defined
           by {{HIDReportItem/usageMinimum}} and {{HIDReportItem/usageMaximum}},
-          or `false` if the item has a sequence of [=HID usage=] values in
+          or `false` if the item has a [=sequence=] of [=HID usage=] values in
           {{HIDReportItem/usages}}.
         </dd>
         <dt>
@@ -2345,8 +2319,8 @@
           </p>
           <p>
             If {{HIDReportItem/isRange}} is `false` then
-            {{HIDReportItem/usages}} contains the sequence of [=HID usage=]
-            values associated with this item.
+            {{HIDReportItem/usages}} is a [=sequence=] of [=HID usage=] values
+            associated with this item.
           </p>
         </dd>
         <dt>
@@ -2484,7 +2458,7 @@
           <dfn>strings</dfn> member
         </dt>
         <dd>
-          The strings associated with this item, or an empty sequence if no
+          The strings associated with this item, or an empty [=sequence=] if no
           strings are associated with this item.
         </dd>
       </dl>
@@ -2494,12 +2468,10 @@
         <dfn>HIDUnitSystem</dfn> enum
       </h2>
       <p>
-        The <a href=
-        "https://www.usb.org/document-library/device-class-definition-hid-111">Device
-        Class Definition for HID 1.11</a> section 6.2.2.7 defines four standard
-        unit systems: SI Linear, SI Rotation, English Linear, and English
-        Rotation. Each item uses one of these four unit systems, a
-        vendor-defined unit system, or no unit system.
+        [[USBIF-HID-CLASS]] section 6.2.2.7 defines four standard unit systems:
+        SI Linear, SI Rotation, English Linear, and English Rotation. Each item
+        uses one of these four unit systems, a vendor-defined unit system, or
+        no unit system.
       </p>
       <pre class="idl">
         enum HIDUnitSystem {
@@ -2692,8 +2664,8 @@
       </p>
       <p>
         The result of <dfn>parsing the blocklist</dfn> at a URL |url| is a
-        sequence of dictionary objects produced by fetching |url| and parsing
-        its contents as JSON.
+        [=sequence=] of dictionary objects produced by fetching |url| and
+        parsing its contents as JSON.
       </p>
       <p>
         The <dfn>HID blocklist</dfn> is the result of [=parsing the blocklist=]
@@ -2705,7 +2677,7 @@
         `true`:
       </p>
       <ol>
-        <li>Repeat for each |rule| in the [=HID blocklist=]:
+        <li>For each |rule| of the [=HID blocklist=]:
           <ol>
             <li>If the report is [=blocked by a blocklist rule=] |rule| then
             return `true`.
