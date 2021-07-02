@@ -359,9 +359,11 @@
         <li>[=list/Append=] |device| to |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
-        of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
-        named {{connect}} at |hid| using {{HIDConnectionEvent}} with its
-        {{HIDConnectionEvent/device}} attribute initialized to |device|.
+        of a previous call to {{HID/requestDevice()}}, then [=queue a global
+        task=] on the [=relevant global object=] of [=this=] using the [=HID
+        device task source=] to [=fire an event=] named {{connect}} at |hid|
+        using {{HIDConnectionEvent}} with its {{HIDConnectionEvent/device}}
+        attribute initialized to |device|.
         </li>
       </ol>
       <p>
@@ -926,9 +928,11 @@
         <li>[=list/Remove=] |device| from |hid|.{{HID/[[devices]]}}.
         </li>
         <li>If the user has allowed the site to access |device| as the result
-        of a previous call to {{HID/requestDevice()}}, then [=fire an event=]
-        named {{disconnect}} at |hid| using {{HIDConnectionEvent}} with its
-        {{HIDConnectionEvent/device}} attribute initialized to |device|.
+        of a previous call to {{HID/requestDevice()}}, then [=queue a global
+        task=] on the [=relevant global object=] of [=this=] using the [=HID
+        device task source=] to [=fire an event=] named {{disconnect}} at |hid|
+        using {{HIDConnectionEvent}} with its {{HIDConnectionEvent/device}}
+        attribute initialized to |device|.
         </li>
       </ol>
       <section>
@@ -1003,12 +1007,12 @@
           "{{SecurityError}}" {{DOMException}} and return |promise|.
           </li>
           <li>If |options|["{{HIDDeviceRequestOptions/filters}}"] is present,
-          then run the following steps for each
+          then run the following steps [=list/for each=]
           |filter:HIDDeviceFilter| of
           |options|["{{HIDDeviceRequestOptions/filters}}"]:
             <ol>
-              <li>If |filter| is empty, then [=reject=] |promise| with
-              a {{TypeError}} and return |promise|.
+              <li>If |filter| is empty, then [=reject=] |promise| with a
+              {{TypeError}} and return |promise|.
               </li>
               <li>If |filter|["{{HIDDeviceFilter/productId}}"] is present and
               |filter|["{{HIDDeviceFilter/vendorId}}"] is not present,
@@ -1028,24 +1032,35 @@
               [=this=].{{HID/[[devices]]}}:
                 <ol>
                   <li>If |device| [=matches any filter=] in
-                  |options|["{{HIDDeviceRequestOptions/filters}}"], then append
-                  |device| to |availableDevices|.
+                  |options|["{{HIDDeviceRequestOptions/filters}}"], then
+                  [=list/append=] |device| to |availableDevices|.
                   </li>
                 </ol>
               </li>
               <li>Prompt the user to grant the site access to a HID device by
               presenting them with the list of devices in |availableDevices|.
-              </li>
-              <li>If the user does not choose a device, [=queue a global task=]
-              on the [=relevant global object=] of [=this=] using the [=HID
-              device task source=] to [=resolve=] |promise| with an empty
-              [=sequence=] of {{HIDDevice}} and abort these steps.
+                <div class="note">
+                  The user agent may modify the device list before presenting
+                  it to the user. For example, devices with multiple
+                  {{HIDDeviceInfo}} SHOULD be represented by a single item such
+                  that selecting the item grants access to all interfaces
+                  exposed by the device. Whether a device is implemented as a
+                  single interface or a collection of interfaces is an
+                  implementation detail that may not be known by the user and
+                  should not be considered relevant for device access
+                  permissions.
+                </div>
               </li>
               <li>Let |devices:sequence&lt;HIDDevice&gt;| be an empty
               [=sequence=] of {{HIDDevice}}.
               </li>
+              <li>If the user does not choose a device, [=queue a global task=]
+              on the [=relevant global object=] of [=this=] using the [=HID
+              device task source=] to [=resolve=] |promise| with |devices| and
+              abort these steps.
+              </li>
               <li>[=list/For each=] |device:HIDDevice| of
-              |hid|.{{HID/[[devices]]}}:
+              [=this=].{{HID/[[devices]]}}:
                 <ol>
                   <li>If |device| represents a [=HID interface=] exposed by the
                   chosen device, then append |device| to |devices|.
@@ -1173,7 +1188,7 @@
           <ol>
             <li>If |filters| is empty, then return `true`.
             </li>
-            <li>For each |filter:HIDDeviceFilter| of |filters|:
+            <li>[=list/For each=] |filter:HIDDeviceFilter| of |filters|:
               <ol>
                 <li>If |filter| [=matches the device IDs=] of |device| and
                 |filter| [=matches any collection=] of |device|, then return
@@ -1210,7 +1225,7 @@
             `true`:
           </p>
           <ol>
-            <li>For each |collection:HIDCollectionInfo| of
+            <li>[=list/For each=] |collection:HIDCollectionInfo| of
             |device|.{{HIDDevice/collections}}:
               <ol>
                 <li>If |filter| [=matches the collection=] |collection| then
@@ -1346,17 +1361,6 @@
           <td>
             The [=top-level collections=] created by [=parsing the report
             descriptor=]
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <dfn data-dfn-for="HIDDevice">[[\pendingOpenPromise]]</dfn>
-          </td>
-          <td>
-            `null`
-          </td>
-          <td>
-            Pending {{HIDDevice/open()}} {{Promise}}
           </td>
         </tr>
         <tr>
@@ -1533,11 +1537,13 @@
         [=uses report IDs=], the [=byte sequence=] MUST NOT include the report
         ID byte.
         </li>
-        <li>[=Fire an event=] named {{inputreport}} at |device| using
-        {{HIDInputReportEvent}} with its {{HIDInputReportEvent/device}}
-        attribute initialized to |device|, its {{HIDInputReportEvent/reportId}}
-        attribute initialized to |reportId|, and its
-        {{HIDInputReportEvent/data}} attribute initialized to |data|.
+        <li>[=Queue a global task=] on the [=relevant global object=] of
+        [=this=] using the [=HID device task source=] to [=fire an event=]
+        named {{inputreport}} at |device| using {{HIDInputReportEvent}} with
+        its {{HIDInputReportEvent/device}} attribute initialized to |device|,
+        its {{HIDInputReportEvent/reportId}} attribute initialized to
+        |reportId|, and its {{HIDInputReportEvent/data}} attribute initialized
+        to |data|.
         </li>
       </ol>
       <section>
@@ -1555,8 +1561,6 @@
           and return |promise|.
           </li>
           <li>Set [=this=].{{HIDDevice/[[state]]}} to `"opening"`.
-          </li>
-          <li>Set [=this=].{{HIDDevice/[[pendingOpenPromise]]}} to |promise|.
           </li>
           <li>Perform the following steps [=in parallel=]:
             <ol>
@@ -1590,12 +1594,6 @@
           <li>Let |promise:Promise| be [=a new promise=].
           </li>
           <li>Set [=this=].{{HIDDevice/[[state]]}} to `"closing"`.
-          </li>
-          <li>If [=this=].{{HIDDevice/[[pendingOpenPromise]]}} is not `null`,
-          [=reject=] [=this=].{{HIDDevice/[[pendingOpenPromise]]}} with an
-          "{{AbortError}}" {{DOMException}}.
-          </li>
-          <li>Set [=this=].{{HIDDevice/[[pendingOpenPromise]]}} to `null`.
           </li>
           <li>[=list/For each=] |pendingPromise:Promise| of
           [=this=].{{HIDDevice/[[pendingSendReportPromises]]}}:
@@ -2677,7 +2675,7 @@
         `true`:
       </p>
       <ol>
-        <li>For each |rule| of the [=HID blocklist=]:
+        <li>[=list/For each=] |rule| of the [=HID blocklist=]:
           <ol>
             <li>If the report is [=blocked by a blocklist rule=] |rule| then
             return `true`.
